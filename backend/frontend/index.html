@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>SkillSphere Auth</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, sans-serif;
+      background: linear-gradient(135deg, #4f46e5, #9333ea);
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .container {
+      background: #ffffff15;
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      padding: 30px;
+      width: 350px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+      text-align: center;
+    }
+
+    h2 {
+      margin-bottom: 20px;
+      font-size: 1.8rem;
+      color: #fff;
+    }
+
+    .btn-choice {
+      margin: 10px;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      background: #6366f1;
+      color: #fff;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    .btn-choice:hover {
+      background: #4338ca;
+    }
+
+    .form-box {
+      display: none;
+      margin-top: 20px;
+      text-align: left;
+    }
+
+    input {
+      margin: 8px 0;
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.95rem;
+    }
+
+    button.action-btn {
+      margin-top: 15px;
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      background: #10b981;
+      color: #fff;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    button.action-btn:hover {
+      background: #059669;
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+    import { 
+      getAuth, 
+      createUserWithEmailAndPassword, 
+      signInWithEmailAndPassword, 
+      updateProfile 
+    } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+
+    // 🔹 Your Firebase config (replace with real values)
+    const firebaseConfig = {
+  apiKey: "AIzaSyATDPnSpmSzfBnUBwGT5cDJKJBbzoFx5_E",
+  authDomain: "skillsphere-1c21e.firebaseapp.com",
+  projectId: "skillsphere-1c21e",
+  storageBucket: "skillsphere-1c21e.firebasestorage.app",
+  messagingSenderId: "763463691308",
+  appId: "1:763463691308:web:facc96aa81eedb0e087589",
+  measurementId: "G-TLX52SGWP5"
+};
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    window.showForm = function(type) {
+      document.getElementById("signup-box").style.display = (type === "signup") ? "block" : "none";
+      document.getElementById("login-box").style.display = (type === "login") ? "block" : "none";
+    };
+
+    // SIGN UP
+    window.signup = function() {
+      const username = document.getElementById("username").value;
+      const email = document.getElementById("signup-email").value;
+      const password = document.getElementById("signup-password").value;
+      const confirmPassword = document.getElementById("confirm-password").value;
+
+      if (password !== confirmPassword) {
+        alert("❌ Passwords do not match!");
+        return;
+      }
+
+      createUserWithEmailAndPassword(auth, email, password)
+        .then(async (userCredential) => {
+          await updateProfile(userCredential.user, { displayName: username });
+          alert("✅ Registered as: " + username + " (" + userCredential.user.email + ")");
+        })
+        .catch((error) => alert("❌ " + error.message));
+    };
+
+    // LOGIN
+    window.login = function() {
+      const email = document.getElementById("login-email").value;
+      const password = document.getElementById("login-password").value;
+
+      signInWithEmailAndPassword(auth, email, password)
+        .then(async (userCredential) => {
+          const user = userCredential.user;
+          const idToken = await user.getIdToken();
+
+          alert("✅ Logged in as: " + (user.displayName || "User") + " (" + user.email + ")");
+
+          // Send token to Flask backend
+          fetch("http://127.0.0.1:5000/secure", {
+            method: "GET",
+            headers: { "Authorization": "Bearer " + idToken }
+          })
+          .then(res => res.json())
+          .then(data => alert("Flask says: " + JSON.stringify(data)))
+          .catch(err => alert("Flask error: " + err));
+        })
+        .catch((error) => alert("❌ " + error.message));
+    };
+  </script>
+</head>
+<body>
+  <div class="container">
+    <h2>Welcome to SkillSphere</h2>
+    <p>Showcase skills • Verify achievements • Connect opportunities</p>
+
+    <div>
+      <button class="btn-choice" onclick="showForm('signup')">Register</button>
+      <button class="btn-choice" onclick="showForm('login')">Login</button>
+    </div>
+
+    <!-- SIGNUP FORM -->
+    <div id="signup-box" class="form-box">
+      <h3>Create Account</h3>
+      <input id="username" type="text" placeholder="Username">
+      <input id="signup-email" type="email" placeholder="Email">
+      <input id="signup-password" type="password" placeholder="Password">
+      <input id="confirm-password" type="password" placeholder="Confirm Password">
+      <button class="action-btn" onclick="signup()">Sign Up</button>
+    </div>
+
+    <!-- LOGIN FORM -->
+    <div id="login-box" class="form-box">
+      <h3>Login</h3>
+      <input id="login-email" type="email" placeholder="Email">
+      <input id="login-password" type="password" placeholder="Password">
+      <button class="action-btn" onclick="login()">Login</button>
+    </div>
+  </div>
+</body>
+</html>
