@@ -30,7 +30,7 @@
     {% if applications %}
         <div class="space-y-6">
             {% for app in applications %}
-                <div class="bg-white rounded-lg shadow p-4 flex items-center justify-between">
+                <div class="bg-white rounded-lg shadow p-4 flex items-center justify-between swipe-card relative transition-transform duration-300" data-app-id="{{ app.id }}">
                     <div class="flex items-center space-x-4">
                         <div class="w-12 h-12 rounded-full bg-slate-200 flex items-center justify-center">
                             {% if app.applicant.profile.avatar_filename %}
@@ -47,16 +47,105 @@
                     </div>
                     <div>
                         {% if app.status == 'Pending' %}
-                        <form method="post" class="flex space-x-2">
+                        <form method="post" class="flex space-x-2 swipe-action-form">
                             <input type="hidden" name="app_id" value="{{ app.id }}">
                             <button name="action" value="accept" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded">Accept</button>
                             <button name="action" value="reject" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded">Reject</button>
                         </form>
+                        <div class="absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-0 swipe-left-indicator transition-opacity duration-200">
+                            <span class="bg-red-500 text-white px-3 py-1 rounded shadow">Reject</span>
+                        </div>
+                        <div class="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-0 swipe-right-indicator transition-opacity duration-200">
+                            <span class="bg-green-500 text-white px-3 py-1 rounded shadow">Accept</span>
+                        </div>
                         {% else %}
                         <span class="px-3 py-1 rounded bg-slate-100 text-slate-700">{{ app.status }}</span>
                         {% endif %}
                     </div>
                 </div>
+{% block scripts %}
+{{ super() }}
+<script>
+// Swipe left/right to reject/accept
+document.querySelectorAll('.swipe-card').forEach(function(card) {
+    let startX = 0, currentX = 0, isDragging = false;
+    let threshold = 80; // px
+    let form = card.querySelector('.swipe-action-form');
+    let leftIndicator = card.querySelector('.swipe-left-indicator');
+    let rightIndicator = card.querySelector('.swipe-right-indicator');
+
+    function setTransform(x) {
+        card.style.transform = `translateX(${x}px)`;
+        if (x < -threshold/2) {
+            leftIndicator.style.opacity = 1;
+        } else {
+            leftIndicator.style.opacity = 0;
+        }
+        if (x > threshold/2) {
+            rightIndicator.style.opacity = 1;
+        } else {
+            rightIndicator.style.opacity = 0;
+        }
+    }
+
+    function resetTransform() {
+        card.style.transform = '';
+        leftIndicator.style.opacity = 0;
+        rightIndicator.style.opacity = 0;
+    }
+
+    card.addEventListener('touchstart', function(e) {
+        if (!form) return;
+        isDragging = true;
+        startX = e.touches[0].clientX;
+    });
+    card.addEventListener('touchmove', function(e) {
+        if (!isDragging) return;
+        currentX = e.touches[0].clientX;
+        setTransform(currentX - startX);
+    });
+    card.addEventListener('touchend', function(e) {
+        if (!isDragging) return;
+        isDragging = false;
+        let diff = currentX - startX;
+        if (diff < -threshold) {
+            // Swipe left: reject
+            form.querySelector('button[value="reject"]').click();
+        } else if (diff > threshold) {
+            // Swipe right: accept
+            form.querySelector('button[value="accept"]').click();
+        } else {
+            resetTransform();
+        }
+    });
+    // Mouse drag for desktop
+    card.addEventListener('mousedown', function(e) {
+        if (!form) return;
+        isDragging = true;
+        startX = e.clientX;
+        card.style.transition = 'none';
+    });
+    document.addEventListener('mousemove', function(e) {
+        if (!isDragging) return;
+        currentX = e.clientX;
+        setTransform(currentX - startX);
+    });
+    document.addEventListener('mouseup', function(e) {
+        if (!isDragging) return;
+        isDragging = false;
+        card.style.transition = '';
+        let diff = currentX - startX;
+        if (diff < -threshold) {
+            form.querySelector('button[value="reject"]').click();
+        } else if (diff > threshold) {
+            form.querySelector('button[value="accept"]').click();
+        } else {
+            resetTransform();
+        }
+    });
+});
+</script>
+{% endblock %}
             {% endfor %}
         </div>
     {% else %}

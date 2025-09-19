@@ -1,51 +1,64 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto">
 
-    <div class="p-4">
-        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between">
-            <div class="flex items-center space-x-4">
-                <div class="w-24 h-24 rounded-full flex-shrink-0">
+<div class="max-w-4xl mx-auto py-10 px-4">
+    <div class="relative bg-gradient-to-br from-blue-50 via-white to-cyan-50 rounded-3xl shadow-2xl border border-slate-200 p-8 mb-10 overflow-hidden">
+        <svg class="absolute -top-10 -right-10 w-40 h-40 opacity-10 pointer-events-none" viewBox="0 0 100 100" fill="none">
+            <circle cx="50" cy="50" r="50" fill="url(#paint0_radial)" />
+            <defs>
+                <radialGradient id="paint0_radial" cx="0" cy="0" r="1" gradientTransform="translate(50 50) scale(50)" gradientUnits="userSpaceOnUse">
+                    <stop stop-color="#38bdf8" />
+                    <stop offset="1" stop-color="#6366f1" />
+                </radialGradient>
+            </defs>
+        </svg>
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-8">
+            <div class="flex items-center gap-6">
+                <div class="w-28 h-28 rounded-full flex-shrink-0 border-4 border-blue-200 shadow-lg bg-white overflow-hidden">
                     {% if user.profile.avatar_filename %}
-                        <img src="{{ url_for('static', filename='avatars/' + user.profile.avatar_filename) }}" alt="{{ user.username }}'s avatar" class="w-24 h-24 rounded-full object-cover">
+                        <img src="{{ url_for('static', filename='avatars/' + user.profile.avatar_filename) }}" alt="{{ user.username }}'s avatar" class="w-28 h-28 rounded-full object-cover">
                     {% else %}
-                        <div class="w-24 h-24 bg-slate-200 rounded-full flex items-center justify-center">
-                            <span class="text-3xl text-slate-500">{{ user.username[0]|upper }}</span>
+                        <div class="w-28 h-28 bg-slate-200 rounded-full flex items-center justify-center">
+                            <span class="text-4xl text-slate-500 font-bold">{{ user.username[0]|upper }}</span>
                         </div>
                     {% endif %}
                 </div>
                 <div>
-                    <h1 class="text-3xl font-bold text-slate-800">{{ user.username }}</h1>
-                    <p class="text-slate-600">{{ user.email }}</p>
+                    <h1 class="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-700 to-cyan-500 mb-1 tracking-tight drop-shadow-lg">{{ user.username }}</h1>
+                    <p class="text-blue-700 font-semibold">{{ user.email }}</p>
                     {% if user.profile and user.profile.bio %}
-                        <p class="mt-2 text-slate-700 max-w-lg">{{ user.profile.bio }}</p>
+                        <p class="mt-2 text-slate-700 max-w-lg italic">{{ user.profile.bio }}</p>
                     {% endif %}
                 </div>
             </div>
             {% if current_user == user %}
-            <div class="mt-4 sm:mt-0">
-                <a href="{{ url_for('edit_profile') }}" class="inline-block px-4 py-2 border border-slate-300 rounded-md text-sm font-semibold text-slate-700 hover:bg-slate-100">
-                    Edit Profile
-                </a>
+            <div class="mt-6 sm:mt-0">
+                <a href="{{ url_for('edit_profile') }}" class="inline-block px-6 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-bold rounded-xl shadow transition-all">Edit Profile</a>
             </div>
             {% endif %}
         </div>
     </div>
 
     {% if user.profile and user.profile.skills %}
-    <div class="p-4">
-        <h2 class="text-xl font-semibold text-slate-700 mb-3 border-t border-slate-200 pt-6">Skills</h2>
+    <div class="mb-8">
+        <h2 class="text-2xl font-bold text-cyan-700 mb-3 flex items-center gap-2">
+            <svg class="h-6 w-6 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L6 13.25l1.41-1.41L9.75 14.17l6.84-6.84L18 8.75z"/></svg>
+            Skills
+        </h2>
         <div class="flex flex-wrap gap-2">
             {% for skill in user.profile.skills %}
-                <span class="bg-blue-100 text-blue-800 text-sm font-semibold px-3 py-1 rounded-full">{{ skill.name }}</span>
+                <span class="bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-800 text-sm font-semibold px-3 py-1 rounded-full shadow border border-cyan-200">{{ skill.name }}</span>
             {% endfor %}
         </div>
     </div>
     {% endif %}
     {% if user.profile %}
-    <div class="p-4">
-        <h2 class="text-xl font-semibold text-slate-700 mb-4 border-t border-slate-200 pt-6">Details</h2>
+    <div class="mb-8">
+        <h2 class="text-2xl font-bold text-cyan-700 mb-4 flex items-center gap-2">
+            <svg class="h-6 w-6 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m9-4V7a4 4 0 00-8 0v2m12 4v2a4 4 0 01-4 4H7a4 4 0 01-4-4v-2a4 4 0 014-4h10a4 4 0 014 4z"/></svg>
+            Details
+        </h2>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
 
             {% if user.profile.college %}
@@ -89,14 +102,17 @@
     </div>
     {% endif %}
 
-    <div class="p-4">
-        <h2 class="text-xl font-semibold text-slate-700 mb-4 border-t border-slate-200 pt-6">Posts</h2>
+    <div class="mb-8">
+        <h2 class="text-2xl font-bold text-cyan-700 mb-4 flex items-center gap-2">
+            <svg class="h-6 w-6 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            Posts
+        </h2>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
             {% for post in posts %}
                 {% include '_post.html' %}
             {% else %}
-                <div class="md:col-span-2 bg-white p-8 rounded-lg shadow-md text-center">
-                    <p class="text-slate-600">This user has not posted anything yet.</p>
+                <div class="md:col-span-2 bg-white p-8 rounded-3xl shadow-xl text-center border border-slate-200">
+                    <p class="text-slate-600 text-lg">This user has not posted anything yet.</p>
                 </div>
             {% endfor %}
         </div>
