@@ -11,39 +11,39 @@
     <title>SkillSphere</title>
     {% endif %}
 </head>
-<body class="bg-gradient-to-br from-slate-100 to-blue-50 min-h-screen font-sans overflow-x-hidden">
+<body class="bg-gradient-to-br from-black via-[#1a1333] to-[#3b197a] min-h-screen font-sans antialiased overflow-x-hidden text-neutral-100">
     <script src="https://cdn.jsdelivr.net/npm/@yaireo/tagify"></script>
     <script src="https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.polyfills.min.js"></script>
     <style>
         ::-webkit-scrollbar { width: 10px; background: #e0e7ef; }
         ::-webkit-scrollbar-thumb { background: linear-gradient(135deg, #38bdf8 0%, #6366f1 100%); border-radius: 8px; }
     </style>
-    <header class="w-full bg-white shadow-md sticky top-0 z-50 border-b border-slate-200">
-        <div class="max-w-full mx-auto px-8 py-4 flex justify-between items-center">
-            <h1 class="text-3xl font-extrabold tracking-tight text-blue-700">
-                <a href="{{ url_for('index') }}">SkillSphere</a>
+    <header class="w-full bg-black/80 shadow-sm sticky top-0 z-50 border-b border-violet-900/60 backdrop-blur">
+        <div class="max-w-6xl mx-auto px-6 py-3 flex justify-between items-center">
+            <h1 class="text-2xl font-bold tracking-tight text-violet-300">
+                <a href="{{ url_for('index') }}" class="hover:text-violet-400 transition">SkillSphere</a>
             </h1>
-            <nav class="space-x-6">
-                <a href="{{ url_for('index') }}" class="text-slate-700 hover:text-blue-700 font-semibold transition">Home</a>
-                <a href="{{ url_for('teams') }}" class="text-slate-700 hover:text-blue-700 font-semibold transition">Teams</a>
+            <nav class="space-x-4">
+                <a href="{{ url_for('index') }}" class="text-neutral-200 hover:text-violet-400 font-medium transition">Home</a>
+                <a href="{{ url_for('teams') }}" class="text-neutral-200 hover:text-violet-400 font-medium transition">Teams</a>
                 {% if current_user.is_anonymous %}
-                <a href="{{ url_for('register') }}" class="text-slate-700 hover:text-blue-700 font-semibold transition">Register</a>
-                <a href="{{ url_for('login') }}" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2 rounded-lg shadow transition">Login</a>
+                <a href="{{ url_for('register') }}" class="text-neutral-200 hover:text-violet-400 font-medium transition">Register</a>
+                <a href="{{ url_for('login') }}" class="bg-violet-700 hover:bg-violet-800 text-white font-medium px-4 py-1.5 rounded-md shadow-sm transition">Login</a>
                 {% else %}
-                <a href="{{ url_for('user', username=current_user.username) }}" class="text-slate-700 hover:text-blue-700 font-semibold transition">Profile</a>
-                <a href="{{ url_for('logout') }}" class="text-slate-700 hover:text-blue-700 font-semibold transition">Logout</a>
+                <a href="{{ url_for('user', username=current_user.username) }}" class="text-neutral-200 hover:text-violet-400 font-medium transition">Profile</a>
+                <a href="{{ url_for('logout') }}" class="text-neutral-200 hover:text-violet-400 font-medium transition">Logout</a>
                 {% endif %}
             </nav>
         </div>
     </header>
     <main class="w-full px-0">
-        <div class="max-w-full mx-auto">
+        <div class="max-w-6xl mx-auto">
             {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
-                <div class="mb-6 px-8">
+                <div class="mb-6 px-6">
                 {% for category, message in messages %}
-                    {% set color = 'blue' if category == 'message' else 'green' if category == 'success' else 'red' if category == 'danger' else 'yellow' %}
-                    <div class="bg-{{ color }}-100 border-l-4 border-{{ color }}-500 text-{{ color }}-700 p-4 rounded-lg shadow-md" role="alert">
+                    {% set color = 'violet' if category == 'message' else 'green' if category == 'success' else 'red' if category == 'danger' else 'yellow' %}
+                    <div class="bg-{{ color }}-900/10 border-l-4 border-{{ color }}-600 text-{{ color }}-200 p-3 rounded-md shadow-sm" role="alert">
                         <p>{{ message }}</p>
                     </div>
                 {% endfor %}
@@ -54,7 +54,7 @@
         </div>
     </main>
     {% if current_user.is_authenticated %}
-    <a href="{{ url_for('create_post') }}" class="fixed bottom-8 right-8 z-50 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg p-4 flex items-center justify-center text-2xl font-bold transition-all" title="Create Post">
+    <a href="{{ url_for('create_post') }}" class="fixed bottom-8 right-8 z-50 bg-violet-700 hover:bg-violet-800 text-white rounded-full shadow-lg p-3 flex items-center justify-center text-xl font-bold transition-all border-2 border-violet-900/40" title="Create Post" style="box-shadow: 0 2px 16px 0 rgba(60,20,120,0.15);">
         +
     </a>
     {% endif %}

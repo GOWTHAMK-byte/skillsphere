@@ -1,37 +1,37 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <div class="max-w-md mx-auto">
-        <h1 class="text-3xl font-bold text-center text-slate-800 mb-6">Sign In</h1>
+    <div class="max-w-md mx-auto bg-black/80 rounded-2xl shadow-xl p-8 mt-12 border border-violet-900">
+        <h1 class="text-3xl font-bold text-center text-violet-200 mb-8 tracking-tight">Sign In</h1>
 
         <form action="" method="post" novalidate>
             {{ form.hidden_tag() }}
 
-            <div class="mb-4">
-                {{ form.username.label(class="block text-slate-700 text-sm font-semibold mb-2") }}
-                {{ form.username(class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500", size=32) }}
+            <div class="mb-6">
+                {{ form.username.label(class="block text-violet-200 text-sm font-semibold mb-2") }}
+                {{ form.username(class="w-full px-3 py-2 bg-black/60 border border-violet-800 rounded-lg text-violet-100 focus:outline-none focus:ring-2 focus:ring-violet-600 placeholder-violet-400", size=32) }}
 
                 {% for error in form.username.errors %}
-                <span class="text-red-500 text-xs mt-1">{{ error }}</span>
+                <span class="text-red-400 text-xs mt-1">{{ error }}</span>
                 {% endfor %}
             </div>
 
-            <div class="mb-6">
-                {{ form.password.label(class="block text-slate-700 text-sm font-semibold mb-2") }}
-                {{ form.password(class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500", size=32) }}
+            <div class="mb-8">
+                {{ form.password.label(class="block text-violet-200 text-sm font-semibold mb-2") }}
+                {{ form.password(class="w-full px-3 py-2 bg-black/60 border border-violet-800 rounded-lg text-violet-100 focus:outline-none focus:ring-2 focus:ring-violet-600 placeholder-violet-400", size=32) }}
 
                 {% for error in form.password.errors %}
-                <span class="text-red-500 text-xs mt-1">{{ error }}</span>
+                <span class="text-red-400 text-xs mt-1">{{ error }}</span>
                 {% endfor %}
             </div>
 
-            <div class="flex items-center mb-6">
-                {{ form.remember_me(class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500") }}
-                {{ form.remember_me.label(class="ml-2 block text-sm text-slate-900") }}
+            <div class="flex items-center mb-8">
+                {{ form.remember_me(class="h-4 w-4 rounded border-violet-800 text-violet-600 focus:ring-violet-600") }}
+                {{ form.remember_me.label(class="ml-2 block text-sm text-violet-200") }}
             </div>
 
             <div>
-                {{ form.submit(class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2") }}
+                {{ form.submit(class="w-full bg-gradient-to-r from-violet-700 to-violet-900 hover:from-violet-800 hover:to-black text-white font-bold py-2 px-4 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-violet-600 focus:ring-offset-2 transition-all duration-200") }}
             </div>
         </form>
     </div>

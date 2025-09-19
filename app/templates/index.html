@@ -3,9 +3,9 @@
 {% block content %}
 <div class="w-full py-10 px-0">
     <div class="flex justify-between items-center mb-10 px-8">
-        <h1 class="text-4xl font-extrabold text-blue-800 tracking-tight">Open Opportunities</h1>
+        <h1 class="text-4xl font-extrabold text-violet-200 tracking-tight drop-shadow">Open Opportunities</h1>
         {% if current_user.is_authenticated %}
-            <a href="{{ url_for('create_post') }}" class="inline-block px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-bold rounded-xl text-base shadow transition-all">
+            <a href="{{ url_for('create_post') }}" class="inline-block px-6 py-3 bg-gradient-to-r from-violet-700 to-black hover:from-violet-800 hover:to-violet-900 text-white font-bold rounded-xl text-base shadow-md transition-all border border-violet-900">
                 + Create Post
             </a>
         {% endif %}
@@ -14,8 +14,8 @@
         {% for post in posts %}
             {% include '_post.html' %}
         {% else %}
-            <div class="col-span-full bg-white p-12 rounded-xl shadow-lg text-center">
-                <p class="text-slate-600 text-lg">No posts have been created yet. Be the first!</p>
+            <div class="col-span-full bg-black/70 p-12 rounded-2xl shadow-xl text-center border border-violet-900">
+                <p class="text-violet-300 text-lg">No posts have been created yet. Be the first!</p>
             </div>
         {% endfor %}
     </div>

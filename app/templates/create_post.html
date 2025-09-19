@@ -1,81 +1,71 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="max-w-2xl mx-auto">
-    <h1 class="text-3xl font-bold text-center text-slate-800 mb-8">Create a New Post</h1>
 
+<div class="max-w-2xl mx-auto bg-black/70 rounded-xl shadow-lg p-8 mt-8 border border-violet-900/40">
+    <h1 class="text-3xl font-bold text-center text-violet-200 mb-8">Create a New Post</h1>
     <form action="" method="post" novalidate enctype="multipart/form-data">
         {{ form.hidden_tag() }}
-
         <div class="space-y-6">
-            
             <div>
-                {{ form.event_name.label(class="block text-slate-700 text-sm font-semibold mb-2") }}
-                {{ form.event_name(class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500", placeholder="e.g., Annual Tech Hackathon") }}
-                {% for error in form.event_name.errors %} <span class="text-red-500 text-xs mt-1">{{ error }}</span> {% endfor %}
+                {{ form.event_name.label(class="block text-violet-200 text-sm font-semibold mb-2") }}
+                {{ form.event_name(class="w-full px-3 py-2 border border-violet-800 bg-black/40 text-violet-100 rounded-md focus:outline-none focus:ring-2 focus:ring-violet-600", placeholder="e.g., Annual Tech Hackathon") }}
+                {% for error in form.event_name.errors %} <span class="text-red-400 text-xs mt-1">{{ error }}</span> {% endfor %}
             </div>
-
             <div>
-                {{ form.description.label(class="block text-slate-700 text-sm font-semibold mb-2") }}
-                {{ form.description(class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500", rows=5, placeholder="Describe the event, goals, and what you're looking for...") }}
-                 {% for error in form.description.errors %} <span class="text-red-500 text-xs mt-1">{{ error }}</span> {% endfor %}
+                {{ form.description.label(class="block text-violet-200 text-sm font-semibold mb-2") }}
+                {{ form.description(class="w-full px-3 py-2 border border-violet-800 bg-black/40 text-violet-100 rounded-md focus:outline-none focus:ring-2 focus:ring-violet-600", rows=5, placeholder="Describe the event, goals, and what you're looking for...") }}
+                {% for error in form.description.errors %} <span class="text-red-400 text-xs mt-1">{{ error }}</span> {% endfor %}
             </div>
-
             <div>
-                {{ form.event_poster.label(class="block text-slate-700 text-sm font-semibold mb-2") }}
-                {{ form.event_poster(class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100") }}
-                {% for error in form.event_poster.errors %} <span class="text-red-500 text-xs mt-1">{{ error }}</span> {% endfor %}
+                {{ form.event_poster.label(class="block text-violet-200 text-sm font-semibold mb-2") }}
+                {{ form.event_poster(class="block w-full text-sm text-violet-200 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-900/20 file:text-violet-200 hover:file:bg-violet-900/40") }}
+                {% for error in form.event_poster.errors %} <span class="text-red-400 text-xs mt-1">{{ error }}</span> {% endfor %}
             </div>
-
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                    {{ form.event_type.label(class="block text-slate-700 text-sm font-semibold mb-2") }}
-                    {{ form.event_type(class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500") }}
-                </div>
-                 <div>
-                    {{ form.team_size.label(class="block text-slate-700 text-sm font-semibold mb-2") }}
-                    {{ form.team_size(class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500", placeholder="e.g., 4") }}
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                 <div>
-                    {{ form.event_datetime.label(class="block text-slate-700 text-sm font-semibold mb-2") }}
-                    {{ form.event_datetime(class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500") }}
+                    {{ form.event_type.label(class="block text-violet-200 text-sm font-semibold mb-2") }}
+                    {{ form.event_type(class="w-full px-3 py-2 border border-violet-800 bg-black/40 text-violet-100 rounded-md focus:outline-none focus:ring-2 focus:ring-violet-600") }}
                 </div>
                 <div>
-                    {{ form.event_venue.label(class="block text-slate-700 text-sm font-semibold mb-2") }}
-                    {{ form.event_venue(class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500", placeholder="e.g., Main Auditorium or Online") }}
+                    {{ form.team_size.label(class="block text-violet-200 text-sm font-semibold mb-2") }}
+                    {{ form.team_size(class="w-full px-3 py-2 border border-violet-800 bg-black/40 text-violet-100 rounded-md focus:outline-none focus:ring-2 focus:ring-violet-600", placeholder="e.g., 4") }}
                 </div>
             </div>
-
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    {{ form.event_datetime.label(class="block text-violet-200 text-sm font-semibold mb-2") }}
+                    {{ form.event_datetime(class="w-full px-3 py-2 border border-violet-800 bg-black/40 text-violet-100 rounded-md focus:outline-none focus:ring-2 focus:ring-violet-600") }}
+                </div>
+                <div>
+                    {{ form.event_venue.label(class="block text-violet-200 text-sm font-semibold mb-2") }}
+                    {{ form.event_venue(class="w-full px-3 py-2 border border-violet-800 bg-black/40 text-violet-100 rounded-md focus:outline-none focus:ring-2 focus:ring-violet-600", placeholder="e.g., Main Auditorium or Online") }}
+                </div>
+            </div>
             <div>
-                {{ form.required_skills.label(class="block text-slate-700 text-sm font-semibold mb-2") }}
-                {{ form.required_skills(class="w-full", placeholder="Add required skills...") }}
+                {{ form.required_skills.label(class="block text-violet-200 text-sm font-semibold mb-2") }}
+                {{ form.required_skills(class="w-full bg-black/40 text-violet-100 border border-violet-800 rounded-md", placeholder="Add required skills...") }}
                 {% for error in form.required_skills.errors %}
-                <span class="text-red-500 text-xs mt-1">{{ error }}</span>
+                <span class="text-red-400 text-xs mt-1">{{ error }}</span>
                 {% endfor %}
             </div>
-
             <div>
-                {{ form.idea.label(class="block text-slate-700 text-sm font-semibold mb-2") }}
-                {{ form.idea(class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500", rows=3, placeholder="Briefly describe your project idea (optional)") }}
+                {{ form.idea.label(class="block text-violet-200 text-sm font-semibold mb-2") }}
+                {{ form.idea(class="w-full px-3 py-2 border border-violet-800 bg-black/40 text-violet-100 rounded-md focus:outline-none focus:ring-2 focus:ring-violet-600", rows=3, placeholder="Briefly describe your project idea (optional)") }}
             </div>
             <div>
-                {{ form.team_requirement.label(class="block text-slate-700 text-sm font-semibold mb-2") }}
-                {{ form.team_requirement(class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500", placeholder="e.g., Final year students only") }}
+                {{ form.team_requirement.label(class="block text-violet-200 text-sm font-semibold mb-2") }}
+                {{ form.team_requirement(class="w-full px-3 py-2 border border-violet-800 bg-black/40 text-violet-100 rounded-md focus:outline-none focus:ring-2 focus:ring-violet-600", placeholder="e.g., Final year students only") }}
             </div>
-
             <div>
-                {{ form.gender_requirement.label(class="block text-slate-700 text-sm font-semibold mb-2") }}
-                {{ form.gender_requirement(class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500") }}
+                {{ form.gender_requirement.label(class="block text-violet-200 text-sm font-semibold mb-2") }}
+                {{ form.gender_requirement(class="w-full px-3 py-2 border border-violet-800 bg-black/40 text-violet-100 rounded-md focus:outline-none focus:ring-2 focus:ring-violet-600") }}
                 {% for error in form.gender_requirement.errors %}
-                <span class="text-red-500 text-xs mt-1">{{ error }}</span>
+                <span class="text-red-400 text-xs mt-1">{{ error }}</span>
                 {% endfor %}
             </div>
-
             <div class="pt-4">
-                {{ form.submit(class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2") }}
+                {{ form.submit(class="w-full bg-violet-700 hover:bg-violet-800 text-white font-bold py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-violet-600 focus:ring-offset-2 transition") }}
             </div>
         </div>
     </form>

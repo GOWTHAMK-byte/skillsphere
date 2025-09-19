@@ -1,28 +1,28 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto">
-    <h1 class="text-2xl font-bold text-slate-800 mb-6">Manage Applicants for: {{ post.event_name }}</h1>
-    <a href="{{ url_for('index') }}" class="text-blue-600 hover:underline mb-4 inline-block">&larr; Back to Posts</a>
+<div class="max-w-3xl mx-auto bg-black/80 rounded-2xl shadow-xl p-8 mt-8 border border-violet-900">
+    <h1 class="text-2xl font-bold text-violet-200 mb-6">Manage Applicants for: {{ post.event_name }}</h1>
+    <a href="{{ url_for('index') }}" class="text-violet-400 hover:underline mb-4 inline-block">&larr; Back to Posts</a>
     <div class="mb-6 flex flex-wrap gap-4 items-center">
         <div>
-            <span class="font-semibold text-slate-700">Team Members:</span>
+            <span class="font-semibold text-violet-200">Team Members:</span>
             <ul class="flex flex-wrap gap-2 mt-2">
                 {% for member in post.teammates %}
-                    <li class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-semibold">
+                    <li class="bg-violet-900/60 text-violet-200 px-3 py-1 rounded-full text-xs font-semibold border border-violet-800">
                         {{ member.username }}{% if member == current_user %} (You){% endif %}
                     </li>
                 {% else %}
-                    <li class="text-slate-500">No team members yet.</li>
+                    <li class="text-violet-400">No team members yet.</li>
                 {% endfor %}
             </ul>
         </div>
         <div class="ml-auto">
             <form method="post">
                 {% if post.applications_closed %}
-                    <button name="open_applications" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded">Reopen Applications</button>
+                    <button name="open_applications" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow">Reopen Applications</button>
                 {% else %}
-                    <button name="close_applications" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded">Close Applications</button>
+                    <button name="close_applications" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded shadow">Close Applications</button>
                 {% endif %}
             </form>
         </div>
@@ -30,36 +30,36 @@
     {% if applications %}
         <div class="space-y-6">
             {% for app in applications %}
-                <div class="bg-white rounded-lg shadow p-4 flex items-center justify-between swipe-card relative transition-transform duration-300" data-app-id="{{ app.id }}">
+                <div class="bg-black/70 rounded-xl shadow-lg p-5 flex items-center justify-between swipe-card relative transition-transform duration-300 border border-violet-900" data-app-id="{{ app.id }}">
                     <div class="flex items-center space-x-4">
-                        <div class="w-12 h-12 rounded-full bg-slate-200 flex items-center justify-center">
+                        <div class="w-12 h-12 rounded-full bg-gradient-to-br from-violet-900 to-black flex items-center justify-center border-2 border-violet-700">
                             {% if app.applicant.profile.avatar_filename %}
                                 <img src="{{ url_for('static', filename='avatars/' + app.applicant.profile.avatar_filename) }}" class="w-12 h-12 rounded-full object-cover">
                             {% else %}
-                                <span class="text-lg text-slate-500">{{ app.applicant.username[0]|upper }}</span>
+                                <span class="text-lg text-violet-300 font-bold">{{ app.applicant.username[0]|upper }}</span>
                             {% endif %}
                         </div>
                         <div>
-                            <a href="{{ url_for('user', username=app.applicant.username) }}" class="font-semibold text-slate-800 hover:underline">{{ app.applicant.username }}</a>
-                            <div class="text-xs text-slate-600">{{ app.applicant.email }}</div>
-                            <div class="text-xs text-slate-600">Status: <span class="font-semibold">{{ app.status }}</span></div>
+                            <a href="{{ url_for('user', username=app.applicant.username) }}" class="font-semibold text-violet-200 hover:underline">{{ app.applicant.username }}</a>
+                            <div class="text-xs text-violet-400">{{ app.applicant.email }}</div>
+                            <div class="text-xs text-violet-400">Status: <span class="font-semibold">{{ app.status }}</span></div>
                         </div>
                     </div>
                     <div>
                         {% if app.status == 'Pending' %}
                         <form method="post" class="flex space-x-2 swipe-action-form">
                             <input type="hidden" name="app_id" value="{{ app.id }}">
-                            <button name="action" value="accept" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded">Accept</button>
-                            <button name="action" value="reject" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded">Reject</button>
+                            <button name="action" value="accept" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded shadow">Accept</button>
+                            <button name="action" value="reject" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded shadow">Reject</button>
                         </form>
                         <div class="absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-0 swipe-left-indicator transition-opacity duration-200">
-                            <span class="bg-red-500 text-white px-3 py-1 rounded shadow">Reject</span>
+                            <span class="bg-red-600 text-white px-3 py-1 rounded shadow">Reject</span>
                         </div>
                         <div class="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-0 swipe-right-indicator transition-opacity duration-200">
-                            <span class="bg-green-500 text-white px-3 py-1 rounded shadow">Accept</span>
+                            <span class="bg-green-600 text-white px-3 py-1 rounded shadow">Accept</span>
                         </div>
                         {% else %}
-                        <span class="px-3 py-1 rounded bg-slate-100 text-slate-700">{{ app.status }}</span>
+                        <span class="px-3 py-1 rounded bg-violet-900/60 text-violet-200 border border-violet-800">{{ app.status }}</span>
                         {% endif %}
                     </div>
                 </div>
@@ -149,8 +149,8 @@ document.querySelectorAll('.swipe-card').forEach(function(card) {
             {% endfor %}
         </div>
     {% else %}
-        <div class="bg-slate-50 border border-slate-200 rounded-lg p-6 text-center">
-            <p class="text-slate-600">No applications yet.</p>
+        <div class="bg-black/70 border border-violet-900 rounded-xl p-8 text-center">
+            <p class="text-violet-400">No applications yet.</p>
         </div>
     {% endif %}
 </div>
