@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <h1 class="text-3xl font-bold text-center text-slate-800 mb-8">Edit Your Profile</h1>
+
+    <form action="" method="post" novalidate enctype="multipart/form-data">
+        {{ form.hidden_tag() }}
+
+        <div class="space-y-6">
+
+            <div>
+                <label class="block text-slate-700 text-sm font-semibold mb-2">Profile Picture</label>
+                <div class="mt-2 flex items-center space-x-6">
+                    <div class="flex-shrink-0">
+                        {% if current_user.profile.avatar_filename %}
+                            <img src="{{ url_for('static', filename='avatars/' + current_user.profile.avatar_filename) }}" alt="Current avatar" class="w-20 h-20 rounded-full object-cover">
+                        {% else %}
+                            <div class="w-20 h-20 bg-slate-200 rounded-full flex items-center justify-center">
+                                <span class="text-2xl text-slate-500">{{ current_user.username[0]|upper }}</span>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="w-full">
+                        {{ form.avatar(class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100") }}
+                        {% for error in form.avatar.errors %}
+                            <span class="text-red-500 text-xs mt-1">{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                {{ form.name.label(class="block text-slate-700 text-sm font-semibold mb-2") }}
+                {{ form.name(class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500", placeholder="Your full name") }}
+                {% for error in form.name.errors %}
+                <span class="text-red-500 text-xs mt-1">{{ error }}</span>
+                {% endfor %}
+            </div>
+
+            <div>
+                {{ form.bio.label(class="block text-slate-700 text-sm font-semibold mb-2") }}
+                {{ form.bio(class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500", rows=4, placeholder="Tell us a little about yourself...") }}
+                {% for error in form.bio.errors %}
+                <span class="text-red-500 text-xs mt-1">{{ error }}</span>
+                {% endfor %}
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    {{ form.college.label(class="block text-slate-700 text-sm font-semibold mb-2") }}
+                    {{ form.college(class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500", placeholder="e.g., University of Technology") }}
+                </div>
+                <div>
+                    {{ form.degree.label(class="block text-slate-700 text-sm font-semibold mb-2") }}
+                    {{ form.degree(class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500", placeholder="e.g., B.S. in Computer Science") }}
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    {{ form.year.label(class="block text-slate-700 text-sm font-semibold mb-2") }}
+                    {{ form.year(class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500", placeholder="e.g., Final Year") }}
+                </div>
+                <div>
+                    {{ form.location.label(class="block text-slate-700 text-sm font-semibold mb-2") }}
+                    {{ form.location(class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500", placeholder="e.g., New Delhi, India") }}
+                </div>
+            </div>
+
+            <div>
+                {{ form.github_url.label(class="block text-slate-700 text-sm font-semibold mb-2") }}
+                {{ form.github_url(class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500", placeholder="https://github.com/username") }}
+                {% for error in form.github_url.errors %}
+                <span class="text-red-500 text-xs mt-1">{{ error }}</span>
+                {% endfor %}
+            </div>
+            <div>
+                {{ form.linkedin_url.label(class="block text-slate-700 text-sm font-semibold mb-2") }}
+                {{ form.linkedin_url(class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500", placeholder="https://linkedin.com/in/username") }}
+                {% for error in form.linkedin_url.errors %}
+                <span class="text-red-500 text-xs mt-1">{{ error }}</span>
+                {% endfor %}
+            </div>
+
+            <div class="pt-4">
+                {{ form.submit(class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2") }}
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

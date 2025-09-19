@@ -4,6 +4,7 @@ import sqlalchemy.orm as so
 from app import db,login
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash,check_password_hash
+from hashlib import md5
 
 @login.user_loader
 def load_user(id):
@@ -34,7 +35,16 @@ class Profile(db.Model):
     bio: so.Mapped[Optional[str]] = so.mapped_column(sa.String(500))
     user_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey('user.id'), index=True)
 
+    college: so.Mapped[Optional[str]] = so.mapped_column(sa.String(200))
+    year: so.Mapped[Optional[str]] = so.mapped_column(sa.String(50))
+    degree: so.Mapped[Optional[str]] = so.mapped_column(sa.String(100))
+    github_url: so.Mapped[Optional[str]] = so.mapped_column(sa.String(255))
+    linkedin_url: so.Mapped[Optional[str]] = so.mapped_column(sa.String(255))
+    resume_file: so.Mapped[Optional[str]] = so.mapped_column(sa.String(255))
+    location: so.Mapped[Optional[str]] = so.mapped_column(sa.String(150))
+
     user: so.Mapped['User'] = so.relationship(back_populates='profile')
+    avatar_filename: so.Mapped[Optional[str]] = so.mapped_column(sa.String(255))
 
     def __repr__(self):
         return f'<Profile for {self.user.username}>'

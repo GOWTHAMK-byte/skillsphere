@@ -1,31 +1,93 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto">
+<div class="max-w-4xl mx-auto">
 
-    <div class="flex items-center space-x-4 p-4">
-        <div class="w-24 h-24 bg-slate-200 rounded-full flex-shrink-0"></div>
-        <div>
-            <h1 class="text-3xl font-bold text-slate-800">{{ user.username }}</h1>
-            <p class="text-slate-600">{{ user.email }}</p>
-            {% if user.profile and user.profile.bio %}
-                <p class="mt-2 text-slate-700">{{ user.profile.bio }}</p>
+    <div class="p-4">
+        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between">
+            <div class="flex items-center space-x-4">
+                <div class="w-24 h-24 rounded-full flex-shrink-0">
+                    {% if user.profile.avatar_filename %}
+                        <img src="{{ url_for('static', filename='avatars/' + user.profile.avatar_filename) }}" alt="{{ user.username }}'s avatar" class="w-24 h-24 rounded-full object-cover">
+                    {% else %}
+                        <div class="w-24 h-24 bg-slate-200 rounded-full flex items-center justify-center">
+                            <span class="text-3xl text-slate-500">{{ user.username[0]|upper }}</span>
+                        </div>
+                    {% endif %}
+                </div>
+                <div>
+                    <h1 class="text-3xl font-bold text-slate-800">{{ user.username }}</h1>
+                    <p class="text-slate-600">{{ user.email }}</p>
+                    {% if user.profile and user.profile.bio %}
+                        <p class="mt-2 text-slate-700 max-w-lg">{{ user.profile.bio }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% if current_user == user %}
+            <div class="mt-4 sm:mt-0">
+                <a href="{{ url_for('edit_profile') }}" class="inline-block px-4 py-2 border border-slate-300 rounded-md text-sm font-semibold text-slate-700 hover:bg-slate-100">
+                    Edit Profile
+                </a>
+            </div>
             {% endif %}
         </div>
     </div>
 
-    <hr class="my-6 border-slate-200">
+    {% if user.profile %}
+    <div class="p-4">
+        <h2 class="text-2xl font-semibold text-slate-700 mb-4 border-t border-slate-200 pt-6">Details</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
 
-    <div>
-        <h2 class="text-2xl font-semibold text-slate-700 mb-4">Posts by {{ user.username }}</h2>
+            {% if user.profile.college %}
+            <div class="flex items-center space-x-3">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M12 14l9-5-9-5-9 5 9 5z" /><path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-5.998 12.078 12.078 0 01.665-6.479L12 14z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-5.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222 4 2.222V20M1 12v7a2 2 0 002 2h14a2 2 0 002-2v-7" /></svg>
+                <div>
+                    <p class="font-semibold text-slate-800">{{ user.profile.college }}</p>
+                    <p class="text-sm text-slate-600">{{ user.profile.degree or '' }} - {{ user.profile.year or '' }}</p>
+                </div>
+            </div>
+            {% endif %}
 
+            {% if user.profile.location %}
+            <div class="flex items-center space-x-3">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-slate-500" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" /></svg>
+                <p class="font-semibold text-slate-800">{{ user.profile.location }}</p>
+            </div>
+            {% endif %}
+
+            {% if user.profile.github_url %}
+            <div class="flex items-center space-x-3">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-slate-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                <a href="{{ user.profile.github_url }}" target="_blank" class="font-semibold text-blue-600 hover:underline">GitHub Profile</a>
+            </div>
+            {% endif %}
+
+            {% if user.profile.linkedin_url %}
+            <div class="flex items-center space-x-3">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-slate-500" fill="currentColor" viewBox="0 0 24 24"><path d="M4.98 3.5c0 1.381-1.11 2.5-2.48 2.5s-2.48-1.119-2.48-2.5c0-1.38 1.11-2.5 2.48-2.5s2.48 1.12 2.48 2.5zm.02 4.5h-5v16h5v-16zm7.982 0h-4.968v16h4.969v-8.399c0-4.67 6.029-5.052 6.029 0v8.399h4.988v-10.131c0-7.88-8.922-7.593-11.018-3.714v-2.155z"/></svg>
+                <a href="{{ user.profile.linkedin_url }}" target="_blank" class="font-semibold text-blue-600 hover:underline">LinkedIn Profile</a>
+            </div>
+            {% endif %}
+
+            {% if user.profile.resume_file %}
+            <div class="flex items-center space-x-3">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                <a href="#" class="font-semibold text-blue-600 hover:underline">Download Resume</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="p-4">
+        <h2 class="text-2xl font-semibold text-slate-700 mb-4 border-t border-slate-200 pt-6">Posts</h2>
         {% for post in posts %}
             <div class="bg-slate-50 border border-slate-200 rounded-lg p-4 mb-4">
                 <div class="flex items-center space-x-3">
                     <div class="w-10 h-10 bg-slate-200 rounded-full flex-shrink-0"></div>
                     <div>
                         <p class="font-semibold text-slate-800">{{ post.author.username }} says:</p>
-                        </div>
+                    </div>
                 </div>
                 <p class="text-slate-700 mt-3">{{ post.body }}</p>
             </div>
