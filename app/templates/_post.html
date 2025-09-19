@@ -1,103 +1,125 @@
 <!-- app/templates/_post.html -->
-<div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300">
+<div class="relative group bg-gradient-to-br from-blue-50 via-white to-cyan-50 rounded-3xl shadow-2xl overflow-hidden border border-slate-200 transition-transform duration-300 hover:scale-[1.025] hover:shadow-3xl">
+    <!-- Decorative SVG background -->
+    <svg class="absolute -top-10 -right-10 w-40 h-40 opacity-10 pointer-events-none" viewBox="0 0 100 100" fill="none">
+        <circle cx="50" cy="50" r="50" fill="url(#paint0_radial)" />
+        <defs>
+            <radialGradient id="paint0_radial" cx="0" cy="0" r="1" gradientTransform="translate(50 50) scale(50)" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#38bdf8" />
+                <stop offset="1" stop-color="#6366f1" />
+            </radialGradient>
+        </defs>
+    </svg>
     <!-- Event Poster / Header -->
     <div class="relative">
         {% if post.event_poster_filename %}
-            <img src="{{ url_for('static', filename='posters/' + post.event_poster_filename) }}" alt="{{ post.event_name }} Poster" class="w-full h-48 object-cover">
+            <img src="{{ url_for('static', filename='posters/' + post.event_poster_filename) }}" alt="{{ post.event_name }} Poster" class="w-full h-56 object-cover object-center rounded-t-3xl group-hover:brightness-90 transition duration-300">
         {% else %}
-            <div class="w-full h-48 bg-gradient-to-r from-cyan-500 to-blue-500"></div>
+            <div class="w-full h-56 bg-gradient-to-r from-cyan-500 to-blue-500 flex items-center justify-center rounded-t-3xl">
+                <span class="text-4xl font-bold text-white opacity-60">No Poster</span>
+            </div>
         {% endif %}
-        <span class="absolute top-2 right-2 bg-slate-100 text-slate-800 text-xs font-semibold px-3 py-1 rounded-full">{{ post.event_type }}</span>
+        <span class="absolute top-4 right-4 bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-xs font-bold px-4 py-1 rounded-full shadow-lg tracking-wider uppercase group-hover:scale-105 transition-transform">{{ post.event_type }}</span>
     </div>
 
-    <div class="p-6">
+    <div class="p-8 relative z-10">
         <!-- Event Name -->
-        <h2 class="text-2xl font-bold text-slate-800">{{ post.event_name }}</h2>
+    <h2 class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-700 to-cyan-500 mb-2 tracking-tight drop-shadow-lg">{{ post.event_name }}</h2>
 
         <!-- Creator Info -->
-        <div class="flex items-center space-x-3 mt-2">
+    <div class="flex items-center space-x-4 mt-2 mb-4">
             <a href="{{ url_for('user', username=post.creator.username) }}" class="flex-shrink-0">
                 {% if post.creator.profile.avatar_filename %}
-                    <img src="{{ url_for('static', filename='avatars/' + post.creator.profile.avatar_filename) }}" class="w-8 h-8 rounded-full object-cover">
+                    <img src="{{ url_for('static', filename='avatars/' + post.creator.profile.avatar_filename) }}" class="w-10 h-10 rounded-full object-cover border-2 border-blue-400 shadow">
                 {% else %}
-                    <div class="w-8 h-8 bg-slate-200 rounded-full flex items-center justify-center">
-                        <span class="text-sm text-slate-500">{{ post.creator.username[0]|upper }}</span>
+                    <div class="w-10 h-10 bg-slate-200 rounded-full flex items-center justify-center border-2 border-blue-200">
+                        <span class="text-lg text-slate-500 font-bold">{{ post.creator.username[0]|upper }}</span>
                     </div>
                 {% endif %}
             </a>
             <div>
-                <a href="{{ url_for('user', username=post.creator.username) }}" class="text-sm font-semibold text-slate-700 hover:underline">Posted by {{ post.creator.username }}</a>
-                <p class="text-xs text-slate-500">on {{ post.timestamp.strftime('%B %d, %Y') }}</p>
+                <a href="{{ url_for('user', username=post.creator.username) }}" class="text-base font-semibold text-blue-700 hover:underline">Posted by {{ post.creator.username }}</a>
+                <p class="text-xs text-slate-400 italic">on {{ post.timestamp.strftime('%B %d, %Y') }}</p>
             </div>
         </div>
 
         <!-- Event Details -->
-        <div class="mt-4 flex items-start space-x-4 text-sm text-slate-600">
+    <div class="mt-2 flex flex-wrap gap-6 text-sm text-slate-600">
             {% if post.event_datetime %}
-                <div class="flex items-center space-x-1.5">
-                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                    <span>{{ post.event_datetime.strftime('%a, %b %d, %I:%M %p') }}</span>
+                <div class="flex items-center gap-2">
+                    <svg class="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    <span class="font-medium">{{ post.event_datetime.strftime('%a, %b %d, %I:%M %p') }}</span>
                 </div>
             {% endif %}
             {% if post.event_venue %}
-                 <div class="flex items-center space-x-1.5">
-                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                    <span>{{ post.event_venue }}</span>
+                 <div class="flex items-center gap-2">
+                    <svg class="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    <span class="font-medium">{{ post.event_venue }}</span>
                 </div>
             {% endif %}
         </div>
 
         <!-- Description -->
-        <p class="mt-4 text-sm text-slate-700">{{ post.description }}</p>
+    <p class="mt-6 text-base text-slate-700 leading-relaxed border-l-4 border-blue-200 pl-4 bg-blue-50/40 py-2">{{ post.description }}</p>
 
         <!-- Team & Skills -->
-        <div class="mt-6">
-            <h4 class="font-semibold text-slate-800 mb-2">Team Info</h4>
-            <div class="flex flex-wrap gap-2 text-xs">
-                <span class="bg-slate-100 text-slate-700 px-3 py-1 rounded-full">Team Size: {{ post.team_size or 'N/A' }}</span>
+        <div class="mt-8">
+            <h4 class="font-bold text-cyan-700 mb-3 text-lg tracking-wide flex items-center gap-2">
+                <svg class="h-5 w-5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m9-4V7a4 4 0 00-8 0v2m12 4v2a4 4 0 01-4 4H7a4 4 0 01-4-4v-2a4 4 0 014-4h10a4 4 0 014 4z"/></svg>
+                Team Info
+            </h4>
+            <div class="flex flex-wrap gap-3 text-xs mb-2">
+                <span class="bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-700 px-4 py-1 rounded-full font-semibold shadow">Team Size: {{ post.team_size or 'N/A' }}</span>
                 {% if post.gender_requirement and post.gender_requirement != 'Any' %}
-                    <span class="bg-slate-100 text-slate-700 px-3 py-1 rounded-full">Gender Requirement: {{ post.gender_requirement }}</span>
+                    <span class="bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-700 px-4 py-1 rounded-full font-semibold shadow">Gender: {{ post.gender_requirement }}</span>
                 {% endif %}
             </div>
             <div class="mt-2">
-                <span class="font-semibold text-slate-700">Team Members:</span>
-                <ul class="flex flex-wrap gap-2 mt-1">
+                {% set teammate_count = (post.teammates|length if post.teammates else 0) + 1 %}
+                <span class="font-semibold text-blue-700">
+                    Team Members ({{ teammate_count }}/{{ post.team_size or 'N/A' }}):
+                </span>
+                <ul class="flex flex-wrap gap-2 mt-2">
+                    <li class="bg-gradient-to-r from-green-400 to-blue-400 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg border-2 border-white">
+                        {{ post.creator.username }} (Creator)
+                    </li>
                     {% for member in post.teammates %}
-                        <li class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-semibold">
+                        {% if member != post.creator %}
+                        <li class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-semibold shadow border border-blue-200">
                             {{ member.username }}{% if member == current_user %} (You){% endif %}
                         </li>
-                    {% else %}
-                        <li class="text-slate-500">No team members yet.</li>
+                        {% endif %}
                     {% endfor %}
                 </ul>
             </div>
 
             {% if post.required_skills %}
-            <h4 class="font-semibold text-slate-800 mt-4 mb-2">Required Skills</h4>
+            <h4 class="font-bold text-cyan-700 mt-6 mb-3 text-lg tracking-wide flex items-center gap-2">
+                <svg class="h-5 w-5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L6 13.25l1.41-1.41L9.75 14.17l6.84-6.84L18 8.75z"/></svg>
+                Required Skills
+            </h4>
             <div class="flex flex-wrap gap-2">
                 {% for skill in post.required_skills %}
-                    <span class="bg-blue-100 text-blue-800 text-xs font-semibold px-3 py-1 rounded-full">{{ skill.name }}</span>
+                    <span class="bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-800 text-xs font-semibold px-3 py-1 rounded-full shadow border border-cyan-200">{{ skill.name }}</span>
                 {% endfor %}
             </div>
             {% endif %}
         </div>
 
         <!-- Actions: Apply or Manage -->
-        <div class="mt-6 pt-4 border-t border-slate-200">
+        <div class="mt-8 pt-6 border-t border-slate-100 flex flex-col gap-3">
             {% if post.creator == current_user %}
-                <a href="{{ url_for('manage_post', post_id=post.id) }}" class="w-full text-center block bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-2 px-4 rounded-lg">
-                    Manage Applicants
-                </a>
+                <a href="{{ url_for('manage_post', post_id=post.id) }}" class="w-full text-center block bg-gradient-to-r from-slate-200 to-slate-300 hover:from-slate-300 hover:to-slate-400 text-slate-800 font-bold py-3 px-4 rounded-xl shadow-lg ring-2 ring-blue-100 transition-all duration-200">Manage Applicants</a>
             {% elif current_user.is_authenticated %}
                 {% if app_status and post.id in app_status %}
-                    <span class="w-full text-center block bg-green-100 text-green-800 font-bold py-2 px-4 rounded-lg inline-block">Applied ({{ app_status[post.id] }})</span>
+                    <span class="w-full text-center block bg-green-100 text-green-800 font-bold py-3 px-4 rounded-xl shadow ring-2 ring-green-200">Applied ({{ app_status[post.id] }})</span>
                 {% else %}
                     <form action="{{ url_for('apply_to_post', post_id=post.id) }}" method="post">
-                        <button type="submit" class="w-full text-center bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg">Apply Now</button>
+                        <button type="submit" class="w-full text-center bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-bold py-3 px-4 rounded-xl shadow-lg ring-2 ring-cyan-100 transition-all duration-200">Apply Now</button>
                     </form>
                 {% endif %}
             {% else %}
-                <a href="{{ url_for('login') }}" class="w-full text-center block bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg">Login to Apply</a>
+                <a href="{{ url_for('login') }}" class="w-full text-center block bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-bold py-3 px-4 rounded-xl shadow-lg ring-2 ring-cyan-100 transition-all duration-200">Login to Apply</a>
             {% endif %}
         </div>
     </div>

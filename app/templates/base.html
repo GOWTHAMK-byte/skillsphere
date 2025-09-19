@@ -14,42 +14,44 @@
 <body class="bg-slate-100 font-sans">
     <script src="https://cdn.jsdelivr.net/npm/@yaireo/tagify"></script>
     <script src="https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.polyfills.min.js"></script>
-    <div class="container mx-auto mt-8 max-w-4xl bg-white rounded-lg shadow-md">
-
-        <header class="p-6 border-b border-slate-200 flex justify-between items-center">
-            <h1 class="text-2xl font-bold text-slate-800">
-                <a href="{{ url_for('index') }}">SkillSphere</a>
-            </h1>
-            <nav class="space-x-4">
-                <a href="{{ url_for('index') }}" class="text-slate-600 hover:text-slate-900">Home</a>
-                <a href="{{ url_for('teams') }}" class="text-slate-600 hover:text-slate-900">Teams</a>
-                {% if current_user.is_anonymous %}
-                <a href="{{ url_for('register') }}" class="text-slate-600 hover:text-slate-900">Register</a>
-                <a href="{{ url_for('login') }}" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-4 py-2 rounded-md">Login</a>
-                {% else %}
-                <a href="{{ url_for('user', username=current_user.username) }}" class="text-slate-600 hover:text-slate-900">Profile</a>
-                <a href="{{ url_for('logout') }}" class="text-slate-600 hover:text-slate-900">Logout</a>
-                {% endif %}
-            </nav>
+    <div class="min-h-screen bg-slate-100">
+        <header class="w-full bg-white shadow-md sticky top-0 z-50">
+            <div class="max-w-full mx-auto px-8 py-4 flex justify-between items-center">
+                <h1 class="text-3xl font-extrabold text-blue-700 tracking-tight">
+                    <a href="{{ url_for('index') }}">SkillSphere</a>
+                </h1>
+                <nav class="space-x-6">
+                    <a href="{{ url_for('index') }}" class="text-slate-700 hover:text-blue-700 font-medium transition">Home</a>
+                    <a href="{{ url_for('teams') }}" class="text-slate-700 hover:text-blue-700 font-medium transition">Teams</a>
+                    {% if current_user.is_anonymous %}
+                    <a href="{{ url_for('register') }}" class="text-slate-700 hover:text-blue-700 font-medium transition">Register</a>
+                    <a href="{{ url_for('login') }}" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-5 py-2 rounded-lg shadow transition">Login</a>
+                    {% else %}
+                    <a href="{{ url_for('user', username=current_user.username) }}" class="text-slate-700 hover:text-blue-700 font-medium transition">Profile</a>
+                    <a href="{{ url_for('logout') }}" class="text-slate-700 hover:text-blue-700 font-medium transition">Logout</a>
+                    {% endif %}
+                </nav>
+            </div>
         </header>
 
-        <main class="p-6">
-            {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                <div class="mb-6">
-                {% for category, message in messages %}
-                    {% set color = 'blue' if category == 'message' else 'green' if category == 'success' else 'red' if category == 'danger' else 'yellow' %}
-                    <div class="bg-{{ color }}-100 border-l-4 border-{{ color }}-500 text-{{ color }}-700 p-4 rounded-md" role="alert">
-                        <p>{{ message }}</p>
+        <main class="w-full px-0">
+            <div class="max-w-full mx-auto">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="mb-6 px-8">
+                    {% for category, message in messages %}
+                        {% set color = 'blue' if category == 'message' else 'green' if category == 'success' else 'red' if category == 'danger' else 'yellow' %}
+                        <div class="bg-{{ color }}-100 border-l-4 border-{{ color }}-500 text-{{ color }}-700 p-4 rounded-md" role="alert">
+                            <p>{{ message }}</p>
+                        </div>
+                    {% endfor %}
                     </div>
-                {% endfor %}
-                </div>
-            {% endif %}
-            {% endwith %}
+                {% endif %}
+                {% endwith %}
 
-            {% block content %}{% endblock %}
+                {% block content %}{% endblock %}
+            </div>
         </main>
-
     </div>
 </body>
 </html>
