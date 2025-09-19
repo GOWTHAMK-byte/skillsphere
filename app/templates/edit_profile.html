@@ -46,6 +46,14 @@
                 {% endfor %}
             </div>
 
+            <div>
+                {{ form.skills.label(class="block text-slate-700 text-sm font-semibold mb-2") }}
+                {{ form.skills(class="w-full", placeholder="Add skills...", value=current_user.profile.skills|map(attribute='name')|join(',')) }}
+                {% for error in form.skills.errors %}
+                <span class="text-red-500 text-xs mt-1">{{ error }}</span>
+                {% endfor %}
+            </div>
+
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                     {{ form.college.label(class="block text-slate-700 text-sm font-semibold mb-2") }}
@@ -89,4 +97,43 @@
         </div>
     </form>
 </div>
+
+<script>
+    // The DOM element you wish to replace with Tagify
+    var input = document.querySelector('input[name=skills]');
+
+    // Initialize Tagify on the input element
+    var tagify = new Tagify(input, {
+        whitelist: [], // Start with an empty whitelist
+        dropdown: {
+            maxItems: 20,           // Show max 20 suggestions
+            classname: "tags-look", // Custom class for dropdown
+            enabled: 1,             // Show suggestions on first character input
+            closeOnSelect: false    // Keep dropdown open after selection
+        }
+    });
+
+    // Listen to any keystroke which modifies the input
+    tagify.on('input', onInput)
+
+    function onInput( e ){
+        var value = e.detail.value;
+        tagify.whitelist = null; // Reset whitelist
+
+        // Abort previous request
+        const controller = new AbortController();
+        const signal = controller.signal;
+
+        // Show loading animation and hide invalid tag message
+        tagify.loading(true).dropdown.hide();
+
+        // Fetch suggestions from our API endpoint
+        fetch(`/api/skills/search?q=${value}`, {signal})
+            .then(RES => RES.json())
+            .then(function(newWhitelist){
+                tagify.whitelist = newWhitelist; // Update whitelist
+                tagify.loading(false).dropdown.show(value); // Show dropdown
+            })
+    }
+</script>
 {% endblock %}

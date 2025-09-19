@@ -5,6 +5,20 @@ from wtforms.validators import DataRequired, Email, EqualTo, ValidationError, Le
 from app.models import User
 from app import db
 import sqlalchemy as sa
+from wtforms_sqlalchemy.fields import QuerySelectMultipleField
+from app.models import Skill
+from wtforms.widgets import ListWidget, CheckboxInput
+
+
+# This is a custom field that will render a multi-select as a list of checkboxes
+class MultiCheckboxField(QuerySelectMultipleField):
+    widget = ListWidget(prefix_label=False)
+    option_widget = CheckboxInput()
+
+
+# This function provides the choices for the skills field
+def get_skills():
+    return db.session.scalars(sa.select(Skill).order_by(Skill.name)).all()
 
 
 class LoginForm(FlaskForm):
@@ -12,6 +26,7 @@ class LoginForm(FlaskForm):
     password = PasswordField("Password", validators=[DataRequired()])
     remember_me = BooleanField("Remember Me?")
     submit = SubmitField("Login")
+
 
 class RegisterForm(FlaskForm):
     username = StringField("Username", validators=[DataRequired()])
@@ -32,7 +47,11 @@ class RegisterForm(FlaskForm):
         if user is not None:
             raise ValidationError('Please use a different email address.')
 
+
 class EditProfileForm(FlaskForm):
+    # --- FIX: Use your custom MultiCheckboxField here ---
+    skills = StringField('Skills')
+
     avatar = FileField('Update Profile Picture (jpg, png)',
                        validators=[FileAllowed(['jpg', 'png', 'jpeg'], 'Images only!')])
     name = StringField('Full Name', validators=[Length(min=0, max=100)])

@@ -1,10 +1,18 @@
-from typing import Optional
+from typing import Optional, List
 import sqlalchemy as sa
 import sqlalchemy.orm as so
-from app import db,login
+from app import db, login
 from flask_login import UserMixin
-from werkzeug.security import generate_password_hash,check_password_hash
-from hashlib import md5
+from werkzeug.security import generate_password_hash, check_password_hash
+
+# --- 1. DEFINE THE ASSOCIATION TABLE ---
+# This table links profiles to skills without needing its own model class.
+profile_skills = db.Table(
+    'profile_skills',
+    db.Model.metadata,
+    sa.Column('profile_id', sa.ForeignKey('profile.id'), primary_key=True),
+    sa.Column('skill_id', sa.ForeignKey('skill.id'), primary_key=True)
+)
 
 @login.user_loader
 def load_user(id):
@@ -27,7 +35,7 @@ class User(db.Model, UserMixin):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
     def __repr__(self):
-        return '<User {}>'.format(self.username)
+        return f'<User {self.username}>'
 
 class Profile(db.Model):
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
@@ -42,9 +50,26 @@ class Profile(db.Model):
     linkedin_url: so.Mapped[Optional[str]] = so.mapped_column(sa.String(255))
     resume_file: so.Mapped[Optional[str]] = so.mapped_column(sa.String(255))
     location: so.Mapped[Optional[str]] = so.mapped_column(sa.String(150))
+    avatar_filename: so.Mapped[Optional[str]] = so.mapped_column(sa.String(255))
 
     user: so.Mapped['User'] = so.relationship(back_populates='profile')
-    avatar_filename: so.Mapped[Optional[str]] = so.mapped_column(sa.String(255))
+
+    # --- 2. ADD THE RELATIONSHIP TO PROFILE ---
+    # This will allow you to access user.profile.skills
+    skills: so.Mapped[List['Skill']] = so.relationship(
+        secondary=profile_skills, back_populates='profiles')
 
     def __repr__(self):
         return f'<Profile for {self.user.username}>'
+
+# --- 3. CREATE THE NEW SKILL MODEL ---
+class Skill(db.Model):
+    id: so.Mapped[int] = so.mapped_column(primary_key=True)
+    name: so.Mapped[str] = so.mapped_column(sa.String(50), unique=True, index=True)
+
+    # This relationship connects Skill back to Profile
+    profiles: so.Mapped[List['Profile']] = so.relationship(
+        secondary=profile_skills, back_populates='skills')
+
+    def __repr__(self):
+        return f'<Skill {self.name}>'
