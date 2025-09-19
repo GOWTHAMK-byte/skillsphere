@@ -1,4 +1,25 @@
 {% extends 'base.html' %}
+
 {% block content %}
-<h1>Index Page</h1>
+<div class="max-w-5xl mx-auto py-8 px-4">
+    <div class="flex justify-between items-center mb-8">
+        <h1 class="text-3xl font-bold text-slate-800">Open Opportunities</h1>
+        {% if current_user.is_authenticated %}
+            <a href="{{ url_for('create_post') }}" class="inline-block px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg text-sm transition-colors">
+                + Create Post
+            </a>
+        {% endif %}
+    </div>
+
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {% for post in posts %}
+            {% include '_post.html' %}
+        {% else %}
+            <div class="md:col-span-2 bg-white p-8 rounded-lg shadow-md text-center">
+                <p class="text-slate-600">No posts have been created yet. Be the first!</p>
+            </div>
+        {% endfor %}
+    </div>
+</div>
 {% endblock %}

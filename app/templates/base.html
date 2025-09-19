@@ -22,6 +22,7 @@
             </h1>
             <nav class="space-x-4">
                 <a href="{{ url_for('index') }}" class="text-slate-600 hover:text-slate-900">Home</a>
+                <a href="{{ url_for('teams') }}" class="text-slate-600 hover:text-slate-900">Teams</a>
                 {% if current_user.is_anonymous %}
                 <a href="{{ url_for('register') }}" class="text-slate-600 hover:text-slate-900">Register</a>
                 <a href="{{ url_for('login') }}" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-4 py-2 rounded-md">Login</a>

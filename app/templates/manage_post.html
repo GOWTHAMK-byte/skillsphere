@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+    <h1 class="text-2xl font-bold text-slate-800 mb-6">Manage Applicants for: {{ post.event_name }}</h1>
+    <a href="{{ url_for('index') }}" class="text-blue-600 hover:underline mb-4 inline-block">&larr; Back to Posts</a>
+    <div class="mb-6 flex flex-wrap gap-4 items-center">
+        <div>
+            <span class="font-semibold text-slate-700">Team Members:</span>
+            <ul class="flex flex-wrap gap-2 mt-2">
+                {% for member in post.teammates %}
+                    <li class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-semibold">
+                        {{ member.username }}{% if member == current_user %} (You){% endif %}
+                    </li>
+                {% else %}
+                    <li class="text-slate-500">No team members yet.</li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div class="ml-auto">
+            <form method="post">
+                {% if post.applications_closed %}
+                    <button name="open_applications" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded">Reopen Applications</button>
+                {% else %}
+                    <button name="close_applications" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded">Close Applications</button>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+    {% if applications %}
+        <div class="space-y-6">
+            {% for app in applications %}
+                <div class="bg-white rounded-lg shadow p-4 flex items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <div class="w-12 h-12 rounded-full bg-slate-200 flex items-center justify-center">
+                            {% if app.applicant.profile.avatar_filename %}
+                                <img src="{{ url_for('static', filename='avatars/' + app.applicant.profile.avatar_filename) }}" class="w-12 h-12 rounded-full object-cover">
+                            {% else %}
+                                <span class="text-lg text-slate-500">{{ app.applicant.username[0]|upper }}</span>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <a href="{{ url_for('user', username=app.applicant.username) }}" class="font-semibold text-slate-800 hover:underline">{{ app.applicant.username }}</a>
+                            <div class="text-xs text-slate-600">{{ app.applicant.email }}</div>
+                            <div class="text-xs text-slate-600">Status: <span class="font-semibold">{{ app.status }}</span></div>
+                        </div>
+                    </div>
+                    <div>
+                        {% if app.status == 'Pending' %}
+                        <form method="post" class="flex space-x-2">
+                            <input type="hidden" name="app_id" value="{{ app.id }}">
+                            <button name="action" value="accept" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded">Accept</button>
+                            <button name="action" value="reject" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded">Reject</button>
+                        </form>
+                        {% else %}
+                        <span class="px-3 py-1 rounded bg-slate-100 text-slate-700">{{ app.status }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="bg-slate-50 border border-slate-200 rounded-lg p-6 text-center">
+            <p class="text-slate-600">No applications yet.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
