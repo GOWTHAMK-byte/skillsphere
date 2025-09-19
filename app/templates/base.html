@@ -1,0 +1,53 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    {% if title %}
+    <title>{{ title }} - SkillSphere</title>
+    {% else %}
+    <title>SkillSphere</title>
+    {% endif %}
+</head>
+<body class="bg-slate-100 font-sans">
+
+    <div class="container mx-auto mt-8 max-w-4xl bg-white rounded-lg shadow-md">
+
+        <header class="p-6 border-b border-slate-200 flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-slate-800">
+                <a href="{{ url_for('index') }}">SkillSphere</a>
+            </h1>
+            <nav class="space-x-4">
+                <a href="{{ url_for('index') }}" class="text-slate-600 hover:text-slate-900">Home</a>
+                {% if current_user.is_anonymous %}
+                <a href="{{ url_for('register') }}" class="text-slate-600 hover:text-slate-900">Register</a>
+                <a href="{{ url_for('login') }}" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-4 py-2 rounded-md">Login</a>
+                {% else %}
+                <a href="{{ url_for('user', username=current_user.username) }}" class="text-slate-600 hover:text-slate-900">Profile</a>
+                <a href="{{ url_for('logout') }}" class="text-slate-600 hover:text-slate-900">Logout</a>
+                {% endif %}
+            </nav>
+        </header>
+
+        <main class="p-6">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="mb-6">
+                {% for category, message in messages %}
+                    {% set color = 'blue' if category == 'message' else 'green' if category == 'success' else 'red' if category == 'danger' else 'yellow' %}
+                    <div class="bg-{{ color }}-100 border-l-4 border-{{ color }}-500 text-{{ color }}-700 p-4 rounded-md" role="alert">
+                        <p>{{ message }}</p>
+                    </div>
+                {% endfor %}
+                </div>
+            {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+        </main>
+
+    </div>
+</body>
+</html>

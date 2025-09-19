@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="max-w-md mx-auto">
+    <h1 class="text-3xl font-bold text-center text-slate-800 mb-6">Create an Account</h1>
+
+    <form action="" method="post" novalidate>
+        {{ form.hidden_tag() }}
+
+        <div class="mb-4">
+            {{ form.username.label(class="block text-slate-700 text-sm font-semibold mb-2") }}
+            {{ form.username(class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500", size=32) }}
+
+            {% for error in form.username.errors %}
+            <span class="text-red-500 text-xs mt-1">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <div class="mb-4">
+            {{ form.email.label(class="block text-slate-700 text-sm font-semibold mb-2") }}
+            {{ form.email(class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500", size=64) }}
+
+            {% for error in form.email.errors %}
+            <span class="text-red-500 text-xs mt-1">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <div class="mb-4">
+            {{ form.password.label(class="block text-slate-700 text-sm font-semibold mb-2") }}
+            {{ form.password(class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500", size=32) }}
+
+            {% for error in form.password.errors %}
+            <span class="text-red-500 text-xs mt-1">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <div class="mb-6">
+            {{ form.password1.label(class="block text-slate-700 text-sm font-semibold mb-2") }}
+            {{ form.password1(class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500", size=32) }}
+
+            {% for error in form.password1.errors %}
+            <span class="text-red-500 text-xs mt-1">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <div>
+            {{ form.submit(class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2") }}
+        </div>
+    </form>
+</div>
+{% endblock %}
