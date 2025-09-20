@@ -1,115 +1,88 @@
-<!-- app/templates/_post.html -->
-<div class="relative group bg-black/80 rounded-2xl shadow-xl overflow-hidden border border-violet-900 transition-transform duration-200 hover:scale-[1.01] hover:shadow-2xl text-sm">
-    <!-- Event Poster / Header -->
-    <div class="relative">
+<div class="h-full flex flex-col relative group bg-gradient-to-br from-[#18122B] to-[#2D1950] rounded-2xl shadow-xl overflow-hidden border border-violet-900/50 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:border-violet-700/60">
+
+    <div class="relative flex-shrink-0">
         {% if post.event_poster_filename %}
-            <img src="{{ url_for('static', filename='posters/' + post.event_poster_filename) }}" alt="{{ post.event_name }} Poster" class="w-full h-44 object-cover object-center rounded-t-2xl border-b-2 border-violet-900 cursor-pointer" onclick="openPosterModal(this)" />
+            <img src="{{ url_for('static', filename='posters/' + post.event_poster_filename) }}" alt="{{ post.event_name }} Poster" class="w-full h-48 object-cover object-center border-b border-violet-900/30 select-none transition-transform duration-300 group-hover:scale-105" draggable="false" />
         {% else %}
-            <div class="w-full h-44 bg-gradient-to-br from-violet-900 to-black flex items-center justify-center rounded-t-2xl border-b-2 border-violet-900">
-                <span class="text-2xl font-semibold text-violet-400">No Poster</span>
+            <div class="w-full h-48 bg-gradient-to-br from-violet-950 to-[#18122B] flex flex-col items-center justify-center border-b border-violet-900/30">
+                <svg class="h-12 w-12 text-violet-600 opacity-50 mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
+                </svg>
+                <span class="text-lg font-bold text-violet-400 opacity-60 tracking-wider">No Poster</span>
             </div>
         {% endif %}
-        <span class="absolute top-3 right-3 bg-gradient-to-r from-violet-700 to-black text-violet-100 text-xs font-semibold px-3 py-1 rounded shadow tracking-wide uppercase border border-violet-900">{{ post.event_type }}</span>
+        <span class="absolute top-4 right-4 bg-black/70 text-violet-200 text-xs font-bold px-3 py-1 rounded-lg border border-violet-900/40 z-10 tracking-widest uppercase shadow-lg">{{ post.event_type }}</span>
     </div>
 
-    <div class="p-6 relative z-10">
-        <!-- Event Name -->
-    <h2 class="text-xl font-extrabold text-violet-200 mb-1 tracking-tight">{{ post.event_name }}</h2>
+    <div class="p-6 flex flex-col flex-grow gap-4">
 
-        <!-- Creator Info -->
-    <div class="flex items-center space-x-3 mt-1 mb-2">
-            <a href="{{ url_for('user', username=post.creator.username) }}" class="flex-shrink-0">
-                {% if post.creator.profile.avatar_filename %}
-                    <img src="{{ url_for('static', filename='avatars/' + post.creator.profile.avatar_filename) }}" class="w-10 h-10 rounded-full object-cover border-2 border-violet-700 shadow">
-                {% else %}
-                    <div class="w-10 h-10 bg-gradient-to-br from-violet-900 to-black rounded-full flex items-center justify-center border-2 border-violet-700">
-                        <span class="text-lg text-violet-300 font-bold">{{ post.creator.username[0]|upper }}</span>
+        <div>
+            <h2 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-200 via-fuchsia-400 to-blue-400 tracking-tight drop-shadow-lg truncate mb-3">{{ post.event_name }}</h2>
+            <div class="flex items-center gap-3">
+                <a href="{{ url_for('user', username=post.creator.username) }}" class="flex-shrink-0">
+                    {% if post.creator.profile.avatar_filename %}
+                        <img src="{{ url_for('static', filename='avatars/' + post.creator.profile.avatar_filename) }}" class="w-10 h-10 rounded-full object-cover border-2 border-violet-700/60 shadow-md">
+                    {% else %}
+                        <div class="w-10 h-10 bg-gradient-to-br from-violet-900 to-black rounded-full flex items-center justify-center border-2 border-violet-700/60 shadow-md">
+                            <span class="text-lg text-violet-300 font-extrabold">{{ post.creator.username[0]|upper }}</span>
+                        </div>
+                    {% endif %}
+                </a>
+                <div>
+                    <a href="{{ url_for('user', username=post.creator.username) }}" class="text-base font-bold text-violet-200 hover:underline truncate">{{ post.creator.username }}</a>
+                    <span class="block text-xs text-violet-400">{{ post.timestamp.strftime('%b %d, %Y') }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex flex-col gap-3">
+            <div class="flex flex-wrap gap-2 text-sm text-violet-300 font-medium">
+                {% if post.event_datetime %}
+                    <div class="flex items-center gap-2 bg-black/30 px-3 py-1 rounded-lg border border-violet-900/20 shadow-sm">
+                        <svg class="h-4 w-4 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        <span>{{ post.event_datetime.strftime('%b %d, %I:%M %p') }}</span>
                     </div>
                 {% endif %}
-            </a>
-            <div>
-                <a href="{{ url_for('user', username=post.creator.username) }}" class="text-sm font-semibold text-violet-300 hover:underline">{{ post.creator.username }}</a>
-                <p class="text-xs text-violet-500">{{ post.timestamp.strftime('%b %d, %Y') }}</p>
+                {% if post.event_venue %}
+                    <div class="flex items-center gap-2 bg-black/30 px-3 py-1 rounded-lg border border-violet-900/20 shadow-sm">
+                        <svg class="h-4 w-4 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        <span>{{ post.event_venue }}</span>
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="bg-black/20 rounded-xl px-4 py-2 border border-violet-900/10 shadow-inner">
+                <p class="text-base text-violet-200 leading-relaxed font-medium line-clamp-3">{{ post.description }}</p>
+            </div>
+
+            <div class="space-y-3">
+                {% if post.required_skills %}
+                <div>
+                    <span class="text-sm font-semibold text-violet-400">Required Skills:</span>
+                    <div class="flex flex-wrap gap-2 mt-1">
+                        {% for skill in post.required_skills %}
+                            <span class="bg-black/30 text-violet-300 px-3 py-1 rounded-full border border-violet-800/20 text-xs font-semibold">{{ skill.name }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
             </div>
         </div>
 
-        <!-- Event Details -->
-    <div class="mt-1 flex flex-wrap gap-2 text-xs text-violet-400">
-            {% if post.event_datetime %}
-                <div class="flex items-center gap-2">
-                    <svg class="h-5 w-5 text-violet-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                    <span class="font-medium">{{ post.event_datetime.strftime('%a, %b %d, %I:%M %p') }}</span>
-                </div>
-            {% endif %}
-            {% if post.event_venue %}
-                 <div class="flex items-center gap-2">
-                    <svg class="h-5 w-5 text-violet-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                    <span class="font-medium">{{ post.event_venue }}</span>
-                </div>
-            {% endif %}
-        </div>
-
-        <!-- Description -->
-    <p class="mt-2 text-xs text-violet-100 leading-relaxed">{{ post.description }}</p>
-
-        <!-- Team & Skills -->
-    <div class="mt-3">
-        <div class="flex flex-wrap gap-2 text-xs mb-1">
-            <span class="bg-violet-900/60 text-violet-200 px-3 py-0.5 rounded font-medium border border-violet-800">Team Size: {{ post.team_size or 'N/A' }}</span>
-            {% if post.gender_requirement and post.gender_requirement != 'Any' %}
-                <span class="bg-violet-900/60 text-violet-200 px-3 py-0.5 rounded font-medium border border-violet-800">Gender: {{ post.gender_requirement }}</span>
-            {% endif %}
-            {% if (post.male_slots or 0) + (post.female_slots or 0) > 0 %}
-                <span class="bg-violet-900/60 text-violet-200 px-3 py-0.5 rounded font-medium border border-violet-800">
-                    Team Gender Ratio: {{ post.male_slots or 0 }} Male / {{ post.female_slots or 0 }} Female
-                </span>
-            {% endif %}
-        </div>
-        <div class="mt-1">
-            {% set teammate_count = (post.teammates|length if post.teammates else 0) + 1 %}
-            <span class="font-semibold text-violet-300 text-xs">
-                Team Members ({{ teammate_count }}/{{ post.team_size or 'N/A' }}):
-            </span>
-            <ul class="flex flex-wrap gap-1 mt-1">
-                <li class="bg-gradient-to-r from-violet-700 to-black text-violet-100 px-2 py-0.5 rounded-full text-xs font-medium border border-violet-900">
-                    {{ post.creator.username }} (Creator)
-                </li>
-                {% for member in post.teammates %}
-                    {% if member != post.creator %}
-                    <li class="bg-violet-900/60 text-violet-200 px-2 py-0.5 rounded-full text-xs font-medium border border-violet-800">
-                        {{ member.username }}{% if member == current_user %} (You){% endif %}
-                    </li>
-                    {% endif %}
-                {% endfor %}
-            </ul>
-        </div>
-        {% if post.required_skills %}
-        <div class="mt-2">
-            <span class="font-semibold text-violet-300 text-xs">Required Skills:</span>
-            <div class="flex flex-wrap gap-1 mt-1">
-                {% for skill in post.required_skills %}
-                    <span class="bg-violet-900/60 text-violet-200 text-xs font-medium px-2 py-0.5 rounded border border-violet-800">{{ skill.name }}</span>
-                {% endfor %}
-            </div>
-        </div>
-        {% endif %}
-    </div>
-
-        <!-- Actions: Apply or Manage -->
-    <div class="mt-4 pt-3 border-t border-violet-900 flex flex-col gap-2">
-        {% if post.creator == current_user %}
-            <a href="{{ url_for('manage_post', post_id=post.id) }}" class="w-full text-center block bg-violet-900/60 hover:bg-violet-900 text-violet-200 font-semibold py-2 px-3 rounded-md border border-violet-800 transition text-xs">Manage Applicants</a>
-        {% elif current_user.is_authenticated %}
-            {% if app_status and post.id in app_status %}
-                <span class="w-full text-center block bg-green-900/40 text-green-300 font-semibold py-2 px-3 rounded-md border border-green-700 text-xs">Applied ({{ app_status[post.id] }})</span>
+        <div class="mt-auto pt-4 border-t border-violet-900/40">
+            {% if post.creator == current_user %}
+                <a href="{{ url_for('manage_post', post_id=post.id) }}" class="w-full text-center block bg-black/40 hover:bg-black/60 text-violet-200 font-bold py-2.5 px-4 rounded-lg border border-violet-800/40 transition text-base shadow-md">Manage</a>
+            {% elif current_user.is_authenticated %}
+                {% if app_status and post.id in app_status %}
+                    <span class="w-full text-center block bg-green-900/30 text-green-200 font-bold py-2.5 px-4 rounded-lg border border-green-700/30 text-base shadow-md">Applied ({{ app_status[post.id] }})</span>
+                {% else %}
+                    <form action="{{ url_for('apply_to_post', post_id=post.id) }}" method="post" class="w-full">
+                        <button type="submit" class="w-full text-center bg-gradient-to-r from-violet-700 to-fuchsia-700 hover:from-violet-600 hover:to-fuchsia-600 text-white font-bold py-2.5 px-4 rounded-lg border border-violet-900/20 transition text-base shadow-lg hover:shadow-violet-500/20">Apply</button>
+                    </form>
+                {% endif %}
             {% else %}
-                <form action="{{ url_for('apply_to_post', post_id=post.id) }}" method="post">
-                    <button type="submit" class="w-full text-center bg-gradient-to-r from-violet-700 to-black hover:from-violet-800 hover:to-black text-white font-semibold py-2 px-3 rounded-md border border-violet-900 transition text-xs">Apply Now</button>
-                </form>
+                <a href="{{ url_for('login') }}" class="w-full text-center block bg-gradient-to-r from-violet-700 to-fuchsia-700 hover:from-violet-600 hover:to-fuchsia-600 text-white font-bold py-2.5 px-4 rounded-lg border border-violet-900/20 transition text-base shadow-lg hover:shadow-violet-500/20">Login to Apply</a>
             {% endif %}
-        {% else %}
-            <a href="{{ url_for('login') }}" class="w-full text-center block bg-gradient-to-r from-violet-700 to-black hover:from-violet-800 hover:to-black text-white font-semibold py-2 px-3 rounded-md border border-violet-900 transition text-xs">Login to Apply</a>
-        {% endif %}
-    </div>
+        </div>
     </div>
 </div>

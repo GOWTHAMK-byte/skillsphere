@@ -55,6 +55,9 @@
                                 </ul>
                             </div>
                             <div class="flex gap-2 mt-3">
+                                {% if post.creator == current_user or current_user in post.teammates %}
+                                    <a href="{{ url_for('chat', post_id=post.id) }}" class="bg-gradient-to-r from-violet-700 to-fuchsia-700 hover:from-violet-800 hover:to-fuchsia-800 text-white font-semibold py-1.5 px-4 rounded-lg border border-violet-900 shadow text-xs">Team Chat</a>
+                                {% endif %}
                                 {% if post.creator == current_user %}
                                     <a href="{{ url_for('manage_post', post_id=post.id) }}" class="bg-gradient-to-r from-fuchsia-700 to-violet-700 hover:from-fuchsia-800 hover:to-violet-800 text-white font-semibold py-1.5 px-4 rounded-lg border border-fuchsia-900 shadow text-xs">Manage</a>
                                 {% else %}

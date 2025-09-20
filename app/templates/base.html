@@ -26,6 +26,12 @@
             <nav class="space-x-4 flex items-center">
                 <a href="{{ url_for('index') }}" class="text-neutral-200 hover:text-fuchsia-400 font-medium transition">Home</a>
                 <a href="{{ url_for('dashboard') }}" class="text-neutral-200 hover:text-fuchsia-400 font-medium transition">Dashboard</a>
+                {% if not current_user.is_anonymous %}
+                <a href="{{ url_for('messages') }}" id="messages-tab" class="text-neutral-200 hover:text-fuchsia-400 font-medium transition relative">
+                    Messages
+                    <span id="messages-badge" class="hidden absolute -top-2 -right-3 bg-fuchsia-600 text-white text-xs rounded-full px-2 py-0.5 font-bold"></span>
+                </a>
+                {% endif %}
                 {% if current_user.is_anonymous %}
                 <a href="{{ url_for('register') }}" class="text-neutral-200 hover:text-fuchsia-400 font-medium transition">Register</a>
                 <a href="{{ url_for('login') }}" class="bg-gradient-to-r from-violet-700 to-fuchsia-700 hover:from-violet-800 hover:to-fuchsia-800 text-white font-medium px-4 py-1.5 rounded-md shadow-sm transition">Login</a>
@@ -60,7 +66,52 @@
     </a>
     {% endif %}
     {% block scripts %}
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script>
+    {% if current_user.is_authenticated %}
+    // Real-time unread badge logic
+    const userId = {{ current_user.id }};
+    let currentChatPostId = null;
+    // Detect if on chat page
+    const chatMatch = window.location.pathname.match(/\/chat\/(\d+)/);
+    if (chatMatch) currentChatPostId = parseInt(chatMatch[1]);
+    // Fetch all chat post IDs for this user (from a JS variable or via API)
+    fetch("{{ url_for('messages') }}?json=1").then(r => r.json()).then(data => {
+        const chatRooms = data.rooms || [];
+        const unreadCounts = data.unread_counts || {};
+        let totalUnread = 0;
+        const socket = io('/chat');
+        chatRooms.forEach(postId => {
+            socket.emit('join', { post_id: postId });
+            if (unreadCounts[postId]) totalUnread += unreadCounts[postId];
+        });
+        updateBadge(totalUnread);
+        socket.on('receive_message', function(msg) {
+            if (parseInt(msg.post_id) !== currentChatPostId) {
+                // Increment badge
+                totalUnread++;
+                updateBadge(totalUnread);
+                // Browser notification
+                if (window.Notification && Notification.permission === 'granted') {
+                    new Notification('New message in team chat', { body: msg.username + ': ' + msg.content });
+                } else if (window.Notification && Notification.permission !== 'denied') {
+                    Notification.requestPermission();
+                }
+            }
+        });
+    });
+    function updateBadge(count) {
+        const badge = document.getElementById('messages-badge');
+        if (badge) {
+            if (count > 0) {
+                badge.textContent = count > 99 ? '99+' : count;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+    }
+    {% endif %}
     // Poster modal logic (global, only one modal per page)
     function openPosterModal(img) {
         var modal = document.getElementById('poster-modal');

@@ -130,3 +130,22 @@ class Application(db.Model):
 
     def __repr__(self):
         return f'<Application by {self.applicant.username} for {self.post.event_name}>'
+
+class ChatMessage(db.Model):
+    id: so.Mapped[int] = so.mapped_column(primary_key=True)
+    post_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey('post.id'), index=True)
+    sender_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey('user.id'), index=True)
+    content: so.Mapped[str] = so.mapped_column(sa.Text)
+    timestamp: so.Mapped[datetime] = so.mapped_column(index=True, default=lambda: datetime.now(timezone.utc))
+
+    post: so.Mapped['Post'] = so.relationship()
+    sender: so.Mapped['User'] = so.relationship()
+
+class ChatReadStatus(db.Model):
+    id: so.Mapped[int] = so.mapped_column(primary_key=True)
+    user_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey('user.id'), index=True)
+    post_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey('post.id'), index=True)
+    last_read: so.Mapped[datetime] = so.mapped_column(default=lambda: datetime.now(timezone.utc))
+
+    user: so.Mapped['User'] = so.relationship()
+    post: so.Mapped['Post'] = so.relationship()

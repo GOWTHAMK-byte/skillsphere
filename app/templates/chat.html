@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="max-w-2xl mx-auto py-10">
+    <h2 class="text-2xl font-bold mb-4 text-violet-200">Team Chat: {{ post.event_name }}</h2>
+    <div id="chat-messages" class="bg-black/60 rounded-xl p-6 mb-4 h-96 overflow-y-auto border border-violet-900">
+        {% for msg in messages %}
+            <div class="mb-3">
+                <span class="font-bold text-violet-300">{{ msg.sender.username }}</span>
+                <span class="text-xs text-violet-500 ml-2">{{ msg.timestamp.strftime('%b %d, %I:%M %p') }}</span>
+                <div class="text-violet-100 ml-4">{{ msg.content }}</div>
+            </div>
+        {% endfor %}
+    </div>
+    <form id="chat-form" class="flex gap-2">
+        <input id="chat-input" name="content" class="flex-1 px-4 py-2 rounded-lg border border-violet-800 bg-black/40 text-violet-100" placeholder="Type your message..." autocomplete="off" required>
+        <button type="submit" class="bg-violet-700 hover:bg-violet-800 text-white font-bold px-6 py-2 rounded-lg border border-violet-900">Send</button>
+    </form>
+    <div class="mt-6 text-center">
+        <a href="{{ url_for('dashboard') }}" class="text-violet-400 hover:underline">Back to Dashboard</a>
+    </div>
+</div>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+    const postId = {{ post.id }};
+    const socket = io('/chat');
+    const chatMessages = document.getElementById('chat-messages');
+    const chatForm = document.getElementById('chat-form');
+    const chatInput = document.getElementById('chat-input');
+
+    socket.on('connect', function() {
+        socket.emit('join', { post_id: postId });
+    });
+
+    socket.on('receive_message', function(data) {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = 'mb-3';
+        msgDiv.innerHTML = `<span class="font-bold text-violet-300">${data.username}</span> <span class="text-xs text-violet-500 ml-2">${data.timestamp}</span><div class="text-violet-100 ml-4">${data.content}</div>`;
+        chatMessages.appendChild(msgDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    });
+
+    chatForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const content = chatInput.value.trim();
+        if (content) {
+            socket.emit('send_message', { post_id: postId, content: content });
+            chatInput.value = '';
+        }
+    });
+</script>
+{% endblock %}

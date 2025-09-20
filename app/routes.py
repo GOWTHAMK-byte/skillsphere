@@ -1,13 +1,15 @@
 from flask import render_template, redirect, url_for, flash, request, jsonify
 from app.forms import LoginForm, RegisterForm, EditProfileForm, CreatePostForm
 from flask_login import current_user, login_user, logout_user, login_required
-from app.models import User, Profile, Skill, Post, Application, post_required_skills
-from app import app, db
+from app.models import User, Profile, Skill, Post, Application, post_required_skills, ChatMessage, ChatReadStatus
+from app import app, db, socketio
 import sqlalchemy as sa
 from werkzeug.utils import secure_filename
 import os
 import secrets
 import json
+from flask_socketio import join_room, leave_room, emit
+from datetime import datetime, timezone
 
 
 def get_recommended_posts(user, limit=6):
@@ -68,11 +70,43 @@ def index():
             unique_posts.append(p)
             seen.add(p.id)
     posts = unique_posts
+    # --- Messages summary for nav/index ---
+    messages_summary = []
     if current_user.is_authenticated:
+        from app.models import ChatReadStatus, ChatMessage
+        # All posts where user is teammate or creator
+        chat_posts = db.session.scalars(
+            sa.select(Post)
+            .where(sa.or_(Post.creator_id == current_user.id, Post.teammates.any(id=current_user.id)))
+        ).unique().all()
+        for post in chat_posts:
+            latest_msg = db.session.scalars(
+                sa.select(ChatMessage).where(ChatMessage.post_id == post.id).order_by(ChatMessage.timestamp.desc())
+            ).first()
+            read_status = db.session.scalar(
+                sa.select(ChatReadStatus).where(ChatReadStatus.user_id == current_user.id, ChatReadStatus.post_id == post.id)
+            )
+            last_read = read_status.last_read if read_status else None
+            if last_read:
+                unread_count = db.session.scalar(
+                    sa.select(sa.func.count(ChatMessage.id)).where(ChatMessage.post_id == post.id, ChatMessage.timestamp > last_read)
+                )
+            else:
+                unread_count = db.session.scalar(
+                    sa.select(sa.func.count(ChatMessage.id)).where(ChatMessage.post_id == post.id)
+                )
+            messages_summary.append({
+                'post': post,
+                'latest_msg': latest_msg,
+                'unread_count': unread_count or 0
+            })
+        # Sort by latest message time, descending
+        messages_summary.sort(key=lambda c: c['latest_msg'].timestamp if c['latest_msg'] else datetime.min, reverse=True)
+        messages_summary = messages_summary[:3]
         app_rows = db.session.scalars(sa.select(Application).where(Application.applicant_id == current_user.id)).all()
         for app in app_rows:
             app_status[app.post_id] = app.status
-    return render_template("index.html", title="Home", posts=posts, gender_filter=gender_filter, app_status=app_status, recommended_mode=False, recommended_posts=[])
+    return render_template("index.html", title="Home", posts=posts, gender_filter=gender_filter, app_status=app_status, recommended_mode=False, recommended_posts=[], messages_summary=messages_summary)
 
 
 @app.route("/recommend")
@@ -438,3 +472,111 @@ def dashboard():
         teams=teams,
         applications=applications
     )
+
+
+@app.route('/chat/<int:post_id>', methods=['GET', 'POST'])
+@login_required
+def chat(post_id):
+    post = db.session.get(Post, post_id)
+    if not post or (current_user not in post.teammates and current_user != post.creator):
+        flash('You are not authorized to view this chat.', 'danger')
+        return redirect(url_for('dashboard'))
+
+    if request.method == 'POST':
+        content = request.form.get('content', '').strip()
+        if content:
+            msg = ChatMessage(post_id=post_id, sender_id=current_user.id, content=content)
+            db.session.add(msg)
+            db.session.commit()
+            return redirect(url_for('chat', post_id=post_id))
+
+    messages = db.session.scalars(
+        sa.select(ChatMessage).where(ChatMessage.post_id == post_id).order_by(ChatMessage.timestamp)
+    ).all()
+    # Mark all as read for this user/post
+    read_status = db.session.scalar(
+        sa.select(ChatReadStatus).where(ChatReadStatus.user_id == current_user.id, ChatReadStatus.post_id == post_id)
+    )
+    now = datetime.now(timezone.utc)
+    if read_status:
+        read_status.last_read = now
+    else:
+        read_status = ChatReadStatus(user_id=current_user.id, post_id=post_id, last_read=now)
+        db.session.add(read_status)
+    db.session.commit()
+    return render_template('chat.html', post=post, messages=messages)
+
+
+@socketio.on('join', namespace='/chat')
+@login_required
+def handle_join(data):
+    post_id = data.get('post_id')
+    post = db.session.get(Post, post_id)
+    if not post or (current_user not in post.teammates and current_user != post.creator):
+        emit('error', {'message': 'Unauthorized'}, room=request.sid)
+        return
+    join_room(str(post_id))
+    emit('status', {'message': f'{current_user.username} joined the chat.'}, room=str(post_id))
+
+
+@socketio.on('send_message', namespace='/chat')
+@login_required
+def handle_send_message(data):
+    post_id = data.get('post_id')
+    content = data.get('content', '').strip()
+    post = db.session.get(Post, post_id)
+    if not post or (current_user not in post.teammates and current_user != post.creator):
+        emit('error', {'message': 'Unauthorized'}, room=request.sid)
+        return
+    if content:
+        msg = ChatMessage(post_id=post_id, sender_id=current_user.id, content=content)
+        db.session.add(msg)
+        db.session.commit()
+        emit('receive_message', {
+            'username': current_user.username,
+            'content': content,
+            'timestamp': msg.timestamp.strftime('%b %d, %I:%M %p')
+        }, room=str(post_id))
+
+
+@app.route('/messages')
+@login_required
+def messages():
+    # All posts where user is teammate or creator
+    posts = db.session.scalars(
+        sa.select(Post)
+        .where(sa.or_(Post.creator_id == current_user.id, Post.teammates.any(id=current_user.id)))
+        .order_by(Post.timestamp.desc())
+    ).unique().all()
+    chat_data = []
+    rooms = []
+    unread_counts = {}
+    for post in posts:
+        rooms.append(post.id)
+        # Get latest message
+        latest_msg = db.session.scalars(
+            sa.select(ChatMessage).where(ChatMessage.post_id == post.id).order_by(ChatMessage.timestamp.desc())
+        ).first()
+        # Get last read time
+        read_status = db.session.scalar(
+            sa.select(ChatReadStatus).where(ChatReadStatus.user_id == current_user.id, ChatReadStatus.post_id == post.id)
+        )
+        last_read = read_status.last_read if read_status else None
+        # Count unread messages
+        if last_read:
+            unread_count = db.session.scalar(
+                sa.select(sa.func.count(ChatMessage.id)).where(ChatMessage.post_id == post.id, ChatMessage.timestamp > last_read)
+            )
+        else:
+            unread_count = db.session.scalar(
+                sa.select(sa.func.count(ChatMessage.id)).where(ChatMessage.post_id == post.id)
+            )
+        unread_counts[post.id] = unread_count or 0
+        chat_data.append({
+            'post': post,
+            'latest_msg': latest_msg,
+            'unread_count': unread_count or 0
+        })
+    if request.args.get('json') == '1':
+        return jsonify({'rooms': rooms, 'unread_counts': unread_counts})
+    return render_template('messages.html', chat_data=chat_data)
