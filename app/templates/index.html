@@ -90,49 +90,5 @@
         </div>
     {% endif %}
 
-    <!-- Messages Panel for logged-in users -->
-    {% if current_user.is_authenticated %}
-    <div class="mb-8 px-8">
-        <div class="bg-black/70 border border-fuchsia-900 rounded-2xl p-6 shadow-xl">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-xl font-bold text-fuchsia-200 flex items-center gap-2">
-                    <svg class="h-6 w-6 text-fuchsia-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8h2a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2v-8a2 2 0 012-2h2M15 10V6a3 3 0 00-6 0v4" /></svg>
-                    Recent Messages
-                </h2>
-                <a href="{{ url_for('messages') }}" class="text-fuchsia-400 hover:underline text-sm font-semibold">View All</a>
-            </div>
-            {% if messages_summary %}
-            <ul class="divide-y divide-fuchsia-900/60">
-                {% for chat in messages_summary %}
-                <li class="flex items-center gap-4 py-3">
-                    <div class="flex-1 min-w-0">
-                        <a href="{{ url_for('chat', post_id=chat.post.id) }}" class="block font-bold text-base text-fuchsia-100 hover:underline">
-                            {{ chat.post.event_name }}
-                        </a>
-                        <div class="text-xs text-fuchsia-400 mt-1 truncate">
-                            {% if chat.latest_msg %}
-                                <span class="font-semibold">{{ chat.latest_msg.sender.username }}:</span>
-                                {{ chat.latest_msg.content[:40] }}{% if chat.latest_msg.content|length > 40 %}...{% endif %}
-                                <span class="ml-2 text-fuchsia-600">{{ chat.latest_msg.timestamp.strftime('%b %d, %I:%M %p') }}</span>
-                            {% else %}
-                                <span class="italic text-fuchsia-700">No messages yet</span>
-                            {% endif %}
-                        </div>
-                    </div>
-                    {% if chat.unread_count > 0 %}
-                    <span class="ml-2 bg-fuchsia-600 text-white text-xs rounded-full px-3 py-1 font-bold">{{ chat.unread_count }}</span>
-                    {% endif %}
-                    <a href="{{ url_for('chat', post_id=chat.post.id) }}" class="ml-2 bg-fuchsia-800 hover:bg-fuchsia-900 text-white px-3 py-1 rounded-lg text-xs font-semibold border border-fuchsia-900">Open</a>
-                </li>
-                {% endfor %}
-            </ul>
-            {% else %}
-            <div class="text-center text-fuchsia-400 py-6">
-                <span class="italic">You have no team chats yet.</span>
-            </div>
-            {% endif %}
-        </div>
-    </div>
-    {% endif %}
 </div>
 {% endblock %}
