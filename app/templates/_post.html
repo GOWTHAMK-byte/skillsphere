@@ -3,7 +3,7 @@
     <!-- Event Poster / Header -->
     <div class="relative">
         {% if post.event_poster_filename %}
-            <img src="{{ url_for('static', filename='posters/' + post.event_poster_filename) }}" alt="{{ post.event_name }} Poster" class="w-full h-44 object-cover object-center rounded-t-2xl border-b-2 border-violet-900">
+            <img src="{{ url_for('static', filename='posters/' + post.event_poster_filename) }}" alt="{{ post.event_name }} Poster" class="w-full h-44 object-cover object-center rounded-t-2xl border-b-2 border-violet-900 cursor-pointer" onclick="openPosterModal(this)" />
         {% else %}
             <div class="w-full h-44 bg-gradient-to-br from-violet-900 to-black flex items-center justify-center rounded-t-2xl border-b-2 border-violet-900">
                 <span class="text-2xl font-semibold text-violet-400">No Poster</span>
@@ -58,6 +58,11 @@
             <span class="bg-violet-900/60 text-violet-200 px-3 py-0.5 rounded font-medium border border-violet-800">Team Size: {{ post.team_size or 'N/A' }}</span>
             {% if post.gender_requirement and post.gender_requirement != 'Any' %}
                 <span class="bg-violet-900/60 text-violet-200 px-3 py-0.5 rounded font-medium border border-violet-800">Gender: {{ post.gender_requirement }}</span>
+            {% endif %}
+            {% if (post.male_slots or 0) + (post.female_slots or 0) > 0 %}
+                <span class="bg-violet-900/60 text-violet-200 px-3 py-0.5 rounded font-medium border border-violet-800">
+                    Team Gender Ratio: {{ post.male_slots or 0 }} Male / {{ post.female_slots or 0 }} Female
+                </span>
             {% endif %}
         </div>
         <div class="mt-1">

@@ -2,70 +2,75 @@
 
 {% block content %}
 
-<div class="max-w-2xl mx-auto bg-black/70 rounded-xl shadow-lg p-8 mt-8 border border-violet-900/40">
-    <h1 class="text-3xl font-bold text-center text-violet-200 mb-8">Create a New Post</h1>
+<div class="max-w-2xl mx-auto bg-black/80 rounded-2xl shadow-2xl p-10 mt-10 border border-violet-900/60">
+    <h1 class="text-4xl font-bold text-center text-violet-200 mb-10">Create a New Post</h1>
     <form action="" method="post" novalidate enctype="multipart/form-data">
         {{ form.hidden_tag() }}
-        <div class="space-y-6">
+        <div class="space-y-8">
             <div>
-                {{ form.event_name.label(class="block text-violet-200 text-sm font-semibold mb-2") }}
-                {{ form.event_name(class="w-full px-3 py-2 border border-violet-800 bg-black/40 text-violet-100 rounded-md focus:outline-none focus:ring-2 focus:ring-violet-600", placeholder="e.g., Annual Tech Hackathon") }}
-                {% for error in form.event_name.errors %} <span class="text-red-400 text-xs mt-1">{{ error }}</span> {% endfor %}
-            </div>
-            <div>
-                {{ form.description.label(class="block text-violet-200 text-sm font-semibold mb-2") }}
-                {{ form.description(class="w-full px-3 py-2 border border-violet-800 bg-black/40 text-violet-100 rounded-md focus:outline-none focus:ring-2 focus:ring-violet-600", rows=5, placeholder="Describe the event, goals, and what you're looking for...") }}
-                {% for error in form.description.errors %} <span class="text-red-400 text-xs mt-1">{{ error }}</span> {% endfor %}
+                {{ form.event_name.label(class="block text-violet-200 text-lg font-semibold mb-2") }}
+                {{ form.event_name(class="w-full px-4 py-3 border border-violet-800 bg-black/40 text-violet-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-600 text-base", placeholder="e.g., Annual Tech Hackathon") }}
+                {% for error in form.event_name.errors %} <span class="text-red-400 text-sm mt-1 block">{{ error }}</span> {% endfor %}
             </div>
             <div>
-                {{ form.event_poster.label(class="block text-violet-200 text-sm font-semibold mb-2") }}
-                {{ form.event_poster(class="block w-full text-sm text-violet-200 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-900/20 file:text-violet-200 hover:file:bg-violet-900/40") }}
-                {% for error in form.event_poster.errors %} <span class="text-red-400 text-xs mt-1">{{ error }}</span> {% endfor %}
+                {{ form.description.label(class="block text-violet-200 text-lg font-semibold mb-2") }}
+                {{ form.description(class="w-full px-4 py-3 border border-violet-800 bg-black/40 text-violet-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-600 text-base", rows=5, placeholder="Describe the event, goals, and what you're looking for...") }}
+                {% for error in form.description.errors %} <span class="text-red-400 text-sm mt-1 block">{{ error }}</span> {% endfor %}
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                {{ form.event_poster.label(class="block text-violet-200 text-lg font-semibold mb-2") }}
+                {{ form.event_poster(class="block w-full text-base text-violet-200 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-base file:font-semibold file:bg-violet-900/20 file:text-violet-200 hover:file:bg-violet-900/40") }}
+                {% for error in form.event_poster.errors %} <span class="text-red-400 text-sm mt-1 block">{{ error }}</span> {% endfor %}
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div>
-                    {{ form.event_type.label(class="block text-violet-200 text-sm font-semibold mb-2") }}
-                    {{ form.event_type(class="w-full px-3 py-2 border border-violet-800 bg-black/40 text-violet-100 rounded-md focus:outline-none focus:ring-2 focus:ring-violet-600") }}
+                    {{ form.event_type.label(class="block text-violet-200 text-lg font-semibold mb-2") }}
+                    {{ form.event_type(class="w-full px-4 py-3 border border-violet-800 bg-black/40 text-violet-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-600 text-base") }}
                 </div>
                 <div>
-                    {{ form.team_size.label(class="block text-violet-200 text-sm font-semibold mb-2") }}
-                    {{ form.team_size(class="w-full px-3 py-2 border border-violet-800 bg-black/40 text-violet-100 rounded-md focus:outline-none focus:ring-2 focus:ring-violet-600", placeholder="e.g., 4") }}
+                    {{ form.team_size.label(class="block text-violet-200 text-lg font-semibold mb-2") }}
+                    {{ form.team_size(class="w-full px-4 py-3 border border-violet-800 bg-black/40 text-violet-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-600 text-base", placeholder="e.g., 4") }}
                 </div>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div id="gender-ratio-section" style="display:none;">
+                <label class="block text-violet-200 text-lg font-semibold mb-2">Team Gender Ratio</label>
+                <div class="flex items-center gap-4 mb-2">
+                    <span class="text-violet-300 font-semibold">Males: <span id="male-count">0</span></span>
+                    <input type="range" id="gender-slider" min="0" max="0" value="0" class="w-full h-2 bg-violet-700 rounded-lg appearance-none cursor-pointer">
+                    <span class="text-violet-300 font-semibold">Females: <span id="female-count">0</span></span>
+                </div>
+                {{ form.male_slots(type="hidden", id="male_slots") }}
+                {{ form.female_slots(type="hidden", id="female_slots") }}
+                <div class="text-xs text-violet-400">Adjust the slider to set the number of males and females. The total will always match the team size.</div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div>
-                    {{ form.event_datetime.label(class="block text-violet-200 text-sm font-semibold mb-2") }}
-                    {{ form.event_datetime(class="w-full px-3 py-2 border border-violet-800 bg-black/40 text-violet-100 rounded-md focus:outline-none focus:ring-2 focus:ring-violet-600") }}
+                    {{ form.event_datetime.label(class="block text-violet-200 text-lg font-semibold mb-2") }}
+                    <div class="relative flex items-center group">
+                        {{ form.event_datetime(type="date", class="w-full px-4 py-3 pr-12 border border-violet-800 bg-black/40 text-violet-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-600 text-base cursor-pointer appearance-none", id="event_date_input", aria_label="Event Date", placeholder="Select event date") }}
+                        <button type="button" id="calendar-btn" aria-label="Open calendar" class="absolute right-4 top-1/2 -translate-y-1/2 text-violet-400 hover:text-violet-200 focus:outline-none cursor-pointer bg-transparent border-0 p-0 m-0" tabindex="0" style="z-index:2;">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        </button>
+                    </div>
                 </div>
                 <div>
-                    {{ form.event_venue.label(class="block text-violet-200 text-sm font-semibold mb-2") }}
-                    {{ form.event_venue(class="w-full px-3 py-2 border border-violet-800 bg-black/40 text-violet-100 rounded-md focus:outline-none focus:ring-2 focus:ring-violet-600", placeholder="e.g., Main Auditorium or Online") }}
+                    {{ form.event_venue.label(class="block text-violet-200 text-lg font-semibold mb-2") }}
+                    {{ form.event_venue(class="w-full px-4 py-3 border border-violet-800 bg-black/40 text-violet-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-600 text-base", placeholder="e.g., Main Auditorium or Online") }}
                 </div>
             </div>
             <div>
-                {{ form.required_skills.label(class="block text-violet-200 text-sm font-semibold mb-2") }}
-                {{ form.required_skills(class="w-full bg-black/40 text-violet-100 border border-violet-800 rounded-md", placeholder="Add required skills...") }}
+                {{ form.required_skills.label(class="block text-violet-200 text-lg font-semibold mb-2") }}
+                {{ form.required_skills(class="w-full bg-black/40 text-violet-100 border border-violet-800 rounded-lg px-4 py-3 text-base", placeholder="Add required skills...") }}
                 {% for error in form.required_skills.errors %}
-                <span class="text-red-400 text-xs mt-1">{{ error }}</span>
+                <span class="text-red-400 text-sm mt-1 block">{{ error }}</span>
                 {% endfor %}
             </div>
             <div>
-                {{ form.idea.label(class="block text-violet-200 text-sm font-semibold mb-2") }}
-                {{ form.idea(class="w-full px-3 py-2 border border-violet-800 bg-black/40 text-violet-100 rounded-md focus:outline-none focus:ring-2 focus:ring-violet-600", rows=3, placeholder="Briefly describe your project idea (optional)") }}
+                {{ form.idea.label(class="block text-violet-200 text-lg font-semibold mb-2") }}
+                {{ form.idea(class="w-full px-4 py-3 border border-violet-800 bg-black/40 text-violet-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-600 text-base", rows=3, placeholder="Briefly describe your project idea (optional)") }}
             </div>
-            <div>
-                {{ form.team_requirement.label(class="block text-violet-200 text-sm font-semibold mb-2") }}
-                {{ form.team_requirement(class="w-full px-3 py-2 border border-violet-800 bg-black/40 text-violet-100 rounded-md focus:outline-none focus:ring-2 focus:ring-violet-600", placeholder="e.g., Final year students only") }}
-            </div>
-            <div>
-                {{ form.gender_requirement.label(class="block text-violet-200 text-sm font-semibold mb-2") }}
-                {{ form.gender_requirement(class="w-full px-3 py-2 border border-violet-800 bg-black/40 text-violet-100 rounded-md focus:outline-none focus:ring-2 focus:ring-violet-600") }}
-                {% for error in form.gender_requirement.errors %}
-                <span class="text-red-400 text-xs mt-1">{{ error }}</span>
-                {% endfor %}
-            </div>
-            <div class="pt-4">
-                {{ form.submit(class="w-full bg-violet-700 hover:bg-violet-800 text-white font-bold py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-violet-600 focus:ring-offset-2 transition") }}
+            <div class="pt-6">
+                {{ form.submit(class="w-full bg-violet-700 hover:bg-violet-800 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-600 focus:ring-offset-2 text-lg transition") }}
             </div>
         </div>
     </form>
@@ -101,5 +106,64 @@
                 tagify.loading(false).dropdown.show(value);
             })
     }
+
+    // Calendar icon click focuses the date input
+    const calendarBtn = document.getElementById('calendar-btn');
+    const dateInput = document.getElementById('event_date_input');
+    if (calendarBtn && dateInput) {
+        calendarBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            dateInput.showPicker ? dateInput.showPicker() : dateInput.focus();
+        });
+    }
+
+    // Show/hide gender ratio section based on team size input
+    const teamSizeInput = document.querySelector('input[name="team_size"]');
+    const genderRatioSection = document.getElementById('gender-ratio-section');
+    const maleSlotsInput = document.getElementById('male_slots');
+    const femaleSlotsInput = document.getElementById('female_slots');
+    const maleCountSpan = document.getElementById('male-count');
+    const femaleCountSpan = document.getElementById('female-count');
+    const genderSlider = document.getElementById('gender-slider');
+
+    teamSizeInput.addEventListener('input', function() {
+        const teamSize = parseInt(this.value);
+        if (!isNaN(teamSize) && teamSize > 0) {
+            genderRatioSection.style.display = 'block';
+            genderSlider.max = teamSize;
+            maleSlotsInput.value = Math.floor(teamSize / 2);
+            femaleSlotsInput.value = teamSize - maleSlotsInput.value;
+            maleCountSpan.textContent = maleSlotsInput.value;
+            femaleCountSpan.textContent = femaleSlotsInput.value;
+            genderSlider.value = maleSlotsInput.value;
+        } else {
+            genderRatioSection.style.display = 'none';
+        }
+    });
+
+    genderSlider.addEventListener('input', function() {
+        const maleCount = this.value;
+        const femaleCount = genderSlider.max - maleCount;
+        maleCountSpan.textContent = maleCount;
+        femaleCountSpan.textContent = femaleCount;
+        maleSlotsInput.value = maleCount;
+        femaleSlotsInput.value = femaleCount;
+    });
+
+    // Ensure hidden fields are set before form submission
+    const createPostForm = document.querySelector('form');
+    createPostForm.addEventListener('submit', function(e) {
+        const teamSize = parseInt(teamSizeInput.value);
+        const maleVal = parseInt(maleSlotsInput.value);
+        const femaleVal = parseInt(femaleSlotsInput.value);
+        if (isNaN(teamSize) || isNaN(maleVal) || isNaN(femaleVal) || (maleVal + femaleVal !== teamSize)) {
+            alert('Please set a valid team size and gender ratio.');
+            e.preventDefault();
+            return false;
+        }
+        // Ensure values are integers
+        maleSlotsInput.value = maleVal;
+        femaleSlotsInput.value = femaleVal;
+    });
 </script>
 {% endblock %}

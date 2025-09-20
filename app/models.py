@@ -5,8 +5,7 @@ from app import db, login
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timezone
-# --- 1. DEFINE THE ASSOCIATION TABLE ---
-# This table links profiles to skills without needing its own model class.
+
 profile_skills = db.Table(
     'profile_skills',
     db.Model.metadata,
@@ -71,20 +70,16 @@ class Profile(db.Model):
 
     user: so.Mapped['User'] = so.relationship(back_populates='profile')
 
-    # --- 2. ADD THE RELATIONSHIP TO PROFILE ---
-    # This will allow you to access user.profile.skills
     skills: so.Mapped[List['Skill']] = so.relationship(
         secondary=profile_skills, back_populates='profiles')
 
     def __repr__(self):
         return f'<Profile for {self.user.username}>'
 
-# --- 3. CREATE THE NEW SKILL MODEL ---
 class Skill(db.Model):
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
     name: so.Mapped[str] = so.mapped_column(sa.String(50), unique=True, index=True)
 
-    # This relationship connects Skill back to Profile
     profiles: so.Mapped[List['Profile']] = so.relationship(
         secondary=profile_skills, back_populates='skills')
     required_by_posts: so.Mapped[List['Post']] = so.relationship(
@@ -116,16 +111,17 @@ class Post(db.Model):
         back_populates='post', cascade='all, delete-orphan')
     gender_requirement: so.Mapped[Optional[str]] = so.mapped_column(sa.String(20))
     applications_closed: so.Mapped[bool] = so.mapped_column(sa.Boolean, default=False)
+    male_slots: so.Mapped[Optional[int]] = so.mapped_column(sa.Integer, default=0)
+    female_slots: so.Mapped[Optional[int]] = so.mapped_column(sa.Integer, default=0)
 
     def __repr__(self):
         return f'<Post {self.event_name}>'
-
 
 class Application(db.Model):
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
     post_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey('post.id'), index=True)
     applicant_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey('user.id'), index=True)
-    status: so.Mapped[str] = so.mapped_column(sa.String(20), default='Pending')  # e.g., Pending, Accepted, Rejected
+    status: so.Mapped[str] = so.mapped_column(sa.String(20), default='Pending')
     timestamp: so.Mapped[datetime] = so.mapped_column(
         index=True, default=lambda: datetime.now(timezone.utc))
 

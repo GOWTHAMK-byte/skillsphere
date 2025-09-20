@@ -16,6 +16,11 @@
                     <li class="text-violet-400">No team members yet.</li>
                 {% endfor %}
             </ul>
+            {% if (post.male_slots or 0) + (post.female_slots or 0) > 0 %}
+            <div class="mt-2 text-xs text-violet-400 font-semibold">
+                Team Gender Ratio: {{ post.male_slots or 0 }} Male / {{ post.female_slots or 0 }} Female
+            </div>
+            {% endif %}
         </div>
         <div class="ml-auto">
             <form method="post">
