@@ -59,9 +59,22 @@
             <h1 class="text-2xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-violet-400 via-fuchsia-400 to-blue-400 drop-shadow-lg">
                 <a href="{{ url_for('index') }}" class="hover:text-fuchsia-400 transition focus-ring" aria-label="SkillSphere Home">SkillSphere</a>
             </h1>
+<<<<<<< HEAD
             <nav class="space-x-2 sm:space-x-4 flex items-center text-base">
                 <a href="{{ url_for('index') }}" class="text-neutral-200 hover:text-fuchsia-400 font-medium transition focus-ring" aria-label="Home">Home</a>
                 <a href="{{ url_for('dashboard') }}" class="text-neutral-200 hover:text-fuchsia-400 font-medium transition focus-ring" aria-label="Dashboard">Dashboard</a>
+=======
+            <nav class="space-x-4 flex items-center">
+                <a href="{{ url_for('index') }}" class="text-neutral-200 hover:text-fuchsia-400 font-medium transition">Home</a>
+                <a href="{{ url_for('dashboard') }}" class="text-neutral-200 hover:text-fuchsia-400 font-medium transition">Dashboard</a>
+                {% if not current_user.is_anonymous %}
+                <a href="{{ url_for('messages') }}" id="messages-tab" class="text-neutral-200 hover:text-fuchsia-400 font-medium transition relative flex items-center justify-center ml-4" title="Messages" style="order:99;">
+                    <!-- Instagram-style paper plane icon -->
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10l18-6-6 18-2.5-7.5L3 10z" /></svg>
+                    <span id="messages-badge" class="hidden absolute -top-2 -right-3 bg-fuchsia-600 text-white text-xs rounded-full px-2 py-0.5 font-bold"></span>
+                </a>
+                {% endif %}
+>>>>>>> cd82beecccea823157f2d16e6cbdb70a12b2b148
                 {% if current_user.is_anonymous %}
                 <a href="{{ url_for('register') }}" class="text-neutral-200 hover:text-fuchsia-400 font-medium transition focus-ring" aria-label="Register">Register</a>
                 <a href="{{ url_for('login') }}" class="bg-gradient-to-r from-violet-700 to-fuchsia-700 hover:from-violet-800 hover:to-fuchsia-800 text-white font-medium px-4 py-1.5 rounded-md shadow-sm transition focus-ring" aria-label="Login">Login</a>
@@ -97,8 +110,52 @@
         </svg>
         <span id="chat-fab-badge" class="hidden absolute -top-2 -right-2 bg-fuchsia-600 text-white text-xs rounded-full px-2 py-0.5 font-bold"></span>
     </a>
+<<<<<<< HEAD
     <script>
     // Real-time unread badge logic for chat icon (all pages)
+=======
+            <a href="{{ url_for('messages') }}" class="text-fuchsia-400 hover:underline text-sm font-semibold">View All</a>
+        </div>
+    </div>
+    {% endif %}
+    {% block scripts %}
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script>
+    {% if current_user.is_authenticated %}
+    // Floating messages panel logic
+    const openMessagesBtn = document.getElementById('open-messages-panel');
+    const closeMessagesBtn = document.getElementById('close-messages-panel');
+    const messagesPanel = document.getElementById('messages-panel');
+    const messagesPanelContent = document.getElementById('messages-panel-content');
+    if (openMessagesBtn && closeMessagesBtn && messagesPanel && messagesPanelContent) {
+        openMessagesBtn.addEventListener('click', function() {
+            messagesPanel.classList.remove('hidden');
+            // Fetch messages summary via AJAX (expects ?json=1 to return chat_data as JSON)
+            fetch("{{ url_for('messages') }}?json=1").then(r => r.json()).then(data => {
+                if (data.chat_data && data.chat_data.length > 0) {
+                    messagesPanelContent.innerHTML = data.chat_data.map(chat => `
+                        <div class='flex items-center gap-4 py-4 px-6 hover:bg-black/40 transition rounded-xl'>
+                            <div class='flex-1 min-w-0'>
+                                <a href='${chat.url}' class='block font-bold text-base text-fuchsia-100 hover:underline'>${chat.event_name}</a>
+                                <div class='text-xs text-fuchsia-400 mt-1 truncate'>
+                                    ${chat.latest_msg ? `<span class='font-semibold'>${chat.latest_msg.sender}:</span> ${chat.latest_msg.content.substring(0, 40)}${chat.latest_msg.content.length > 40 ? '...' : ''} <span class='ml-2 text-fuchsia-600'>${chat.latest_msg.timestamp}</span>` : `<span class='italic text-fuchsia-700'>No messages yet</span>`}
+                                </div>
+                            </div>
+                            ${chat.unread_count > 0 ? `<span class='ml-2 bg-fuchsia-600 text-white text-xs rounded-full px-3 py-1 font-bold'>${chat.unread_count}</span>` : ''}
+                            <a href='${chat.url}' class='ml-4 bg-violet-800 hover:bg-violet-900 text-white px-4 py-2 rounded-lg text-xs font-semibold border border-violet-900'>Open Chat</a>
+                        </div>
+                    `).join('');
+                } else {
+                    messagesPanelContent.innerHTML = `<div class='bg-black/70 border border-violet-900 rounded-xl p-8 text-center'><p class='text-violet-400'>You have no team chats yet.</p></div>`;
+                }
+            });
+        });
+        closeMessagesBtn.addEventListener('click', function() {
+            messagesPanel.classList.add('hidden');
+        });
+    }
+    // Real-time unread badge logic
+>>>>>>> cd82beecccea823157f2d16e6cbdb70a12b2b148
     const userId = {{ current_user.id }};
     let currentChatPostId = null;
     const chatMatch = window.location.pathname.match(/\/chat\/(\d+)/);
