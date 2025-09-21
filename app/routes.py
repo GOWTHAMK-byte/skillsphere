@@ -11,51 +11,197 @@ import json
 from flask_socketio import join_room, leave_room, emit
 from datetime import datetime, timezone
 
+# --- NEW IMPORTS FOR RECOMMENDATION ENGINE ---
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+import numpy as np
+
 
 def get_recommended_posts(user, limit=6):
-    user_skills = {skill.name for skill in user.profile.skills}
-    user_gender = user.profile.gender
+    """
+    Generates highly personalized post recommendations for a user.
 
-    # Query all open posts not created by the user
-    posts = db.session.scalars(
-        sa.select(Post)
-        .where(
-            Post.creator_id != user.id,
-            Post.applications_closed == False
-        )
-        .order_by(Post.timestamp.desc())
+    This function integrates multiple advanced recommendation strategies:
+    1.  **NLP Content Similarity:** Understands the *meaning* of post descriptions to find conceptually similar projects.
+    2.  **Complementary Skill Matching:** Identifies posts where the user's skills would be a perfect "missing piece" for the team (e.g., frontend dev for a backend project).
+    3.  **Weighted Scoring:** Balances multiple factors like direct skill matches, location, and user preferences.
+    4.  **Cold Start Handling:** Provides a sensible default for brand new users.
+    5.  **Diversity Control:** Ensures the user sees a variety of projects from different creators.
+    """
+    # --- 1. SETUP: SKILL CATEGORIES & WEIGHTS ---
+    SKILL_CATEGORIES = {
+        'Frontend': ['react', 'angular', 'vue', 'javascript', 'html', 'css', 'typescript', 'svelte'],
+        'Backend': ['python', 'java', 'node.js', 'ruby', 'php', 'go', 'flask', 'django', 'express.js'],
+        'Database': ['sql', 'mysql', 'postgresql', 'mongodb', 'redis'],
+        'DevOps': ['docker', 'kubernetes', 'aws', 'gcp', 'azure', 'jenkins', 'ci/cd'],
+        'Mobile': ['swift', 'kotlin', 'react native', 'flutter', 'ios', 'android'],
+        'Data Science': ['machine learning', 'tensorflow', 'pytorch', 'pandas', 'numpy', 'scikit-learn'],
+        'Design': ['figma', 'adobe xd', 'sketch', 'ui', 'ux', 'prototyping']
+    }
+    COMPLEMENTARY_PAIRS = {
+        'Frontend': ['Backend', 'Design', 'Database'],
+        'Backend': ['Frontend', 'DevOps', 'Data Science', 'Database'],
+        'Design': ['Frontend', 'Mobile'],
+        'Data Science': ['Backend', 'Database'],
+        'Mobile': ['Backend', 'Design']
+    }
+    WEIGHTS = {
+        'skill': 4.0,           # Score for direct skill matches
+        'complementary': 8.0,   # High score for being a good team fit
+        'rarity': 2.0,          # Bonus for having rare skills
+        'event_type': 3.0,      # Score for matching preferred event types
+        'recency': 1.5,         # Bonus for newer posts
+        'location': 4.0,        # Score for local events
+        'nlp': 10.0             # Highest weight for conceptual similarity
+    }
+
+    # --- 2. NLP ANALYSIS: UNDERSTAND USER'S "TASTE" ---
+    all_posts_for_nlp = db.session.scalars(sa.select(Post)).all()
+    user_applications_for_nlp = db.session.scalars(sa.select(Application).where(Application.applicant_id == user.id)).all()
+    user_liked_texts = [app.post.description + ' ' + app.post.idea for app in user_applications_for_nlp if app.post and app.post.description and app.post.idea]
+    if not user_liked_texts and user.profile.bio:
+        user_liked_texts.append(user.profile.bio)
+
+    post_texts = {post.id: (post.description or '') + ' ' + (post.idea or '') for post in all_posts_for_nlp}
+    corpus = list(post_texts.values()) + user_liked_texts
+    user_taste_vector, post_vectors = None, {}
+    if len(corpus) > 1:
+        try:
+            vectorizer = TfidfVectorizer(stop_words='english', min_df=1)
+            tfidf_matrix = vectorizer.fit_transform(corpus)
+            post_vectors = {pid: tfidf_matrix[i] for i, pid in enumerate(post_texts.keys())}
+            if user_liked_texts:
+                user_taste_vector = tfidf_matrix[-len(user_liked_texts):].mean(axis=0)
+                # Convert to dense ndarray for compatibility
+                if hasattr(user_taste_vector, 'toarray'):
+                    user_taste_vector = user_taste_vector.toarray()
+                user_taste_vector = np.asarray(user_taste_vector)
+        except ValueError: # Handles edge case of empty vocabulary
+            pass
+
+    # --- 3. USER PROFILING & COLD START ---
+    user_skills = {skill.name.lower() for skill in user.profile.skills}
+    is_new_user = not user_skills and not user_applications_for_nlp and not user.profile.bio
+    if is_new_user: # If user is new, return the most recent posts as a fallback
+        all_posts = db.session.scalars(
+            sa.select(Post).where(Post.creator_id != user.id, Post.applications_closed == False)
+            .order_by(Post.timestamp.desc())
+        ).all()
+        return all_posts[:5] if len(all_posts) >= 5 else all_posts
+
+    user_gender = user.profile.gender
+    user_location = (user.profile.location or '').strip().lower() if user.profile and user.profile.location else ''
+    user_event_types = {app.post.event_type for app in user_applications_for_nlp if app.post and app.post.event_type}
+    user_posts_created = db.session.scalars(sa.select(Post).where(Post.creator_id == user.id)).all()
+    for post in user_posts_created:
+        if post.event_type: user_event_types.add(post.event_type)
+
+    # --- 4. SCORING LOOP: EVALUATE EACH POST ---
+    applied_post_ids = {app.post_id for app in user_applications_for_nlp}
+    teammate_post_ids = {post.id for post in user.teams}
+    candidate_posts = db.session.scalars(
+        sa.select(Post).where(Post.creator_id != user.id, Post.applications_closed == False)
     ).unique().all()
 
     scored_posts = []
-    for post in posts:
-        # Gender requirement check
-        if post.gender_requirement and post.gender_requirement != 'Any' and post.gender_requirement != user_gender:
-            continue
-        required_skills = {skill.name for skill in post.required_skills}
-        if not required_skills:
-            matched_count = 0  # No required skills, neutral
-        else:
-            matched_skills = user_skills & required_skills
-            matched_count = len(matched_skills)
-        # Only recommend if user has at least one required skill or there are no required skills
-        if matched_count > 0 or not required_skills:
-            scored_posts.append((matched_count, len(required_skills), post.timestamp, post))
-    # Sort by matched_count (desc), then fewer required_skills (asc), then timestamp (desc)
-    scored_posts.sort(key=lambda x: (-x[0], x[1], -x[2].timestamp() if hasattr(x[2], 'timestamp') else 0))
-    # Deduplicate by post id
-    seen = set()
-    unique_posts = []
-    for _, _, _, post in scored_posts:
-        if post.id not in seen:
+    for post in candidate_posts:
+        if post.id in applied_post_ids or post.id in teammate_post_ids: continue
+        if post.gender_requirement and post.gender_requirement != 'Any' and post.gender_requirement != user_gender: continue
+
+        required_skills = {skill.name.lower() for skill in post.required_skills}
+
+        # Direct Skill Match Score
+        matched_skills = user_skills & required_skills
+        skill_score = len(matched_skills)
+
+        # Rarity Bonus
+        rarity_bonus = sum(1 for skill in matched_skills if db.session.scalar(sa.select(sa.func.count(post_required_skills.c.post_id)).join(Skill).where(Skill.name == skill)) < 5)
+
+        # Complementary Skill "Team Fit" Score
+        user_skill_cats = {cat for cat, skills in SKILL_CATEGORIES.items() if any(s in user_skills for s in skills)}
+        post_skill_cats = {cat for cat, skills in SKILL_CATEGORIES.items() if any(s in required_skills for s in skills)}
+        missing_cats = post_skill_cats - user_skill_cats
+        complementary_score = 0
+        for missing_cat in missing_cats:
+            if any(user_cat in COMPLEMENTARY_PAIRS and missing_cat in COMPLEMENTARY_PAIRS[user_cat] for user_cat in user_skill_cats):
+                complementary_score += 1
+
+        # Other Preference Scores
+        event_type_score = 1 if post.event_type in user_event_types else 0
+        now_utc = datetime.now(timezone.utc)
+        post_time = post.timestamp.replace(tzinfo=timezone.utc) if post.timestamp.tzinfo is None else post.timestamp
+        recency_score = max(0, 1 - ((now_utc - post_time).days / 30))
+
+        post_location = (post.event_venue or '').strip().lower() if post.event_venue else ''
+        location_score = 0
+        if user_location and post_location:
+            if user_location in post_location or post_location in user_location: location_score = 1.0
+            else:
+                user_city, post_city = user_location.split(',')[0].strip(), post_location.split(',')[0].strip()
+                if user_city and post_city and user_city == post_city: location_score = 0.7
+
+        # NLP Content Similarity Score
+        nlp_score = 0
+        if user_taste_vector is not None and post.id in post_vectors:
+            post_vector = post_vectors[post.id]
+            # Convert both vectors to dense ndarrays for compatibility
+            user_vec_dense = user_taste_vector
+            if hasattr(user_vec_dense, 'toarray'):
+                user_vec_dense = user_vec_dense.toarray()
+            user_vec_dense = np.asarray(user_vec_dense)
+            post_vec_dense = post_vector
+            if hasattr(post_vec_dense, 'toarray'):
+                post_vec_dense = post_vec_dense.toarray()
+            post_vec_dense = np.asarray(post_vec_dense)
+            if np.any(user_vec_dense) and np.any(post_vec_dense):
+                nlp_score = cosine_similarity(user_vec_dense, post_vec_dense)[0][0]
+
+        # Calculate Final Weighted Score
+        total_score = (
+            (skill_score * WEIGHTS['skill']) +
+            (complementary_score * WEIGHTS['complementary']) +
+            (rarity_bonus * WEIGHTS['rarity']) +
+            (event_type_score * WEIGHTS['event_type']) +
+            (recency_score * WEIGHTS['recency']) +
+            (location_score * WEIGHTS['location']) +
+            (nlp_score * WEIGHTS['nlp'])
+        )
+        scored_posts.append((total_score, post.timestamp, post))
+
+    # --- 5. FINAL RANKING & DIVERSITY CONTROL ---
+    scored_posts.sort(key=lambda x: x[0], reverse=True) # Sort primarily by score
+
+    seen_creators, unique_posts = {}, []
+    for _, _, post in scored_posts:
+        creator_id = post.creator_id
+        if seen_creators.get(creator_id, 0) >= 2: continue # Limit to max 2 posts from same creator
+        unique_posts.append(post)
+        seen_creators[creator_id] = seen_creators.get(creator_id, 0) + 1
+        if len(unique_posts) >= limit: break
+
+    # Ensure at least 5 posts if possible
+    if len(unique_posts) < 5:
+        # Add more posts (ignoring diversity) until 5 or all are included
+        all_sorted_posts = [post for _, _, post in scored_posts if post not in unique_posts]
+        for post in all_sorted_posts:
             unique_posts.append(post)
-            seen.add(post.id)
-        if len(unique_posts) >= limit:
-            break
+            if len(unique_posts) >= 5:
+                break
+
     return unique_posts
 
 
+
+
 @app.route("/")
+def landing():
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+    return render_template("landing.html", title="Welcome to SkillSphere")
+
+
 @app.route("/index")
+@login_required
 def index():
     gender_filter = request.args.get('gender')
     app_status = {}
@@ -297,13 +443,12 @@ def create_post():
                 description=form.description.data,
                 idea=form.idea.data,
                 team_size=team_size,
-                team_requirement=form.team_requirement.data,
                 event_poster_filename=poster_filename,
                 event_type=form.event_type.data,
                 event_datetime=form.event_datetime.data,
                 event_venue=form.event_venue.data,
                 creator=current_user,
-                gender_requirement=form.gender_requirement.data,
+                gender_requirement=form.gender_requirement.data if hasattr(form, 'gender_requirement') else None,
                 male_slots=male_slots,
                 female_slots=female_slots
             )
@@ -398,7 +543,28 @@ def manage_post(post_id):
         return redirect(url_for('manage_post', post_id=post_id))
     # List all applications
     applications = db.session.scalars(sa.select(Application).where(Application.post_id == post_id)).all()
-    return render_template('manage_post.html', post=post, applications=applications)
+    # Recommend users
+    recommended_users = recommend_users_for_post(post)
+    return render_template('manage_post.html', post=post, applications=applications, recommended_users=recommended_users)
+
+
+def recommend_users_for_post(post, limit=5):
+    from app.models import User, Application
+    required_skills = {skill.name.lower() for skill in post.required_skills}
+    teammate_ids = {user.id for user in post.teammates}
+    applicant_ids = {app.applicant_id for app in post.applications}
+    exclude_ids = teammate_ids | applicant_ids | {post.creator_id}
+    candidates = db.session.scalars(sa.select(User).where(~User.id.in_(exclude_ids))).all()
+    scored = []
+    for user in candidates:
+        if not user.profile:
+            continue
+        user_skills = {skill.name.lower() for skill in user.profile.skills}
+        score = len(required_skills & user_skills)
+        if score > 0:
+            scored.append((score, user))
+    scored.sort(reverse=True, key=lambda x: x[0])
+    return [user for score, user in scored[:limit]]
 
 
 @app.route('/teams')
@@ -461,11 +627,17 @@ def dashboard():
     ).unique().all()
 
     # Applications submitted by the user (with related posts and creators)
-    applications = db.session.scalars(
+    all_applications = db.session.scalars(
         sa.select(Application)
         .where(Application.applicant_id == current_user.id)
         .options(sa.orm.joinedload(Application.post).joinedload(Post.creator))
     ).all()
+
+    # Filter out applications that are accepted and user is already a teammate
+    applications = [
+        app for app in all_applications
+        if not (app.status == 'Accepted' and current_user in app.post.teammates)
+    ]
 
     return render_template(
         'dashboard.html',
@@ -535,7 +707,8 @@ def handle_send_message(data):
         emit('receive_message', {
             'username': current_user.username,
             'content': content,
-            'timestamp': msg.timestamp.strftime('%b %d, %I:%M %p')
+            'timestamp': msg.timestamp.strftime('%b %d, %I:%M %p'),
+            'sender_id': current_user.id
         }, room=str(post_id))
 
 
@@ -580,3 +753,66 @@ def messages():
     if request.args.get('json') == '1':
         return jsonify({'rooms': rooms, 'unread_counts': unread_counts})
     return render_template('messages.html', chat_data=chat_data)
+
+
+@app.route('/api/recommend/apply/<int:post_id>', methods=['POST'])
+@login_required
+def recommend_apply(post_id):
+    post = db.session.get(Post, post_id)
+    if not post:
+        return jsonify({'success': False, 'error': 'Post not found'}), 404
+    # Check if already applied
+    existing = db.session.scalar(sa.select(Application).where(Application.post_id == post_id, Application.applicant_id == current_user.id))
+    if not existing:
+        application = Application(post_id=post_id, applicant_id=current_user.id)
+        db.session.add(application)
+        db.session.commit()
+    return jsonify({'success': True})
+
+@app.route('/api/recommend/ignore/<int:post_id>', methods=['POST'])
+@login_required
+def recommend_ignore(post_id):
+    # For now, just acknowledge. Optionally, store rejection in DB for future improvements.
+    return jsonify({'success': True})
+
+
+@app.route('/leave_team/<int:post_id>', methods=['POST'])
+@login_required
+def leave_team(post_id):
+    post = db.session.get(Post, post_id)
+    if not post:
+        flash('Team not found.', 'danger')
+        return redirect(url_for('dashboard'))
+    if post.creator_id == current_user.id:
+        flash('Creators cannot leave their own team.', 'warning')
+        return redirect(url_for('dashboard'))
+    if current_user not in post.teammates:
+        flash('You are not a member of this team.', 'danger')
+        return redirect(url_for('dashboard'))
+    post.teammates.remove(current_user)
+    # Remove the application if it exists (so user can re-apply)
+    application = db.session.scalar(sa.select(Application).where(Application.post_id == post_id, Application.applicant_id == current_user.id))
+    if application:
+        db.session.delete(application)
+    db.session.commit()
+    flash('You have left the team.', 'success')
+    return redirect(url_for('dashboard'))
+
+
+@app.route('/delete_post/<int:post_id>', methods=['POST'])
+@login_required
+def delete_post(post_id):
+    post = db.session.get(Post, post_id)
+    if not post or post.creator_id != current_user.id:
+        flash('You are not authorized to delete this post.', 'danger')
+        return redirect(url_for('index'))
+    # Remove all applications for this post
+    applications = db.session.scalars(sa.select(Application).where(Application.post_id == post_id)).all()
+    for app in applications:
+        db.session.delete(app)
+    # Remove all teammates associations
+    post.teammates.clear()
+    db.session.delete(post)
+    db.session.commit()
+    flash('Post deleted successfully.', 'success')
+    return redirect(url_for('user', username=current_user.username))

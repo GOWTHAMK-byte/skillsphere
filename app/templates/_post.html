@@ -49,7 +49,39 @@
                         <span>{{ post.event_venue }}</span>
                     </div>
                 {% endif %}
+                {# Team size #}
+                {% if post.team_size %}
+                    <div class="flex items-center gap-2 bg-black/30 px-3 py-1 rounded-lg border border-violet-900/20 shadow-sm">
+                        <svg class="h-4 w-4 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m9-4a4 4 0 10-8 0 4 4 0 008 0z"/></svg>
+                        <span>Team Size: {{ post.team_size }}</span>
+                    </div>
+                {% endif %}
+                {# Gender requirement #}
+                {% if post.gender_requirement and post.gender_requirement != 'Any' %}
+                    <div class="flex items-center gap-2 bg-black/30 px-3 py-1 rounded-lg border border-violet-900/20 shadow-sm">
+                        <svg class="h-4 w-4 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14v7m0 0H9m3 0h3M5 11a7 7 0 1114 0A7 7 0 015 11z"/></svg>
+                        <span>Gender: {{ post.gender_requirement }}</span>
+                    </div>
+                {% endif %}
+                {# Male/Female slots #}
+                {% if post.male_slots is not none or post.female_slots is not none %}
+                    <div class="flex items-center gap-2 bg-black/30 px-3 py-1 rounded-lg border border-violet-900/20 shadow-sm">
+                        <svg class="h-4 w-4 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87"/></svg>
+                        <span>Slots:
+                            {% if post.male_slots is not none %}♂️ {{ post.male_slots }} {% endif %}
+                            {% if post.female_slots is not none %}♀️ {{ post.female_slots }}{% endif %}
+                        </span>
+                    </div>
+                {% endif %}
             </div>
+
+            {# Event Idea #}
+            {% if post.idea %}
+            <div class="bg-black/20 rounded-xl px-4 py-2 border border-violet-900/10 shadow-inner">
+                <span class="text-sm font-semibold text-violet-400">Idea:</span>
+                <p class="text-base text-violet-200 leading-relaxed font-medium mt-1">{{ post.idea }}</p>
+            </div>
+            {% endif %}
 
             <div class="bg-black/20 rounded-xl px-4 py-2 border border-violet-900/10 shadow-inner">
                 <p class="text-base text-violet-200 leading-relaxed font-medium line-clamp-3">{{ post.description }}</p>

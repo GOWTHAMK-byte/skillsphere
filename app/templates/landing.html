@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="flex flex-col items-center justify-center min-h-[70vh] py-16">
+    <div class="bg-white/10 backdrop-blur-md border border-violet-400/20 shadow-2xl rounded-2xl px-10 py-12 max-w-2xl w-full flex flex-col items-center animate-fadein-glass">
+        <h1 class="text-5xl font-extrabold text-violet-200 mb-6 drop-shadow-lg tracking-tight text-center">Welcome to SkillSphere</h1>
+        <p class="text-lg text-violet-300 mb-10 max-w-xl text-center">Connect, collaborate, and build your dream team for hackathons, projects, and more. Join SkillSphere to find the perfect teammates and opportunities!</p>
+        <div class="flex gap-6">
+            <a href="{{ url_for('login') }}" class="px-8 py-3 bg-violet-700 hover:bg-violet-800 text-white font-bold rounded-xl text-lg shadow-md border border-violet-900 transition-all transform hover:scale-105 focus-ring">Login</a>
+            <a href="{{ url_for('register') }}" class="px-8 py-3 bg-green-700 hover:bg-green-800 text-white font-bold rounded-xl text-lg shadow-md border border-green-900 transition-all transform hover:scale-105 focus-ring">Register</a>
+        </div>
+    </div>
+</div>
+<style>
+@keyframes fadein-glass {
+    from { opacity: 0; transform: translateY(30px) scale(0.98);}
+    to { opacity: 1; transform: translateY(0) scale(1);}
+}
+.animate-fadein-glass {
+    animation: fadein-glass 1.2s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both;
+}
+</style>
+{% endblock %}

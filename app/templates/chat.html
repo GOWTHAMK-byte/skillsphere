@@ -32,11 +32,20 @@
     });
 
     socket.on('receive_message', function(data) {
+        // Only notify if the message is from another user
+        if (data.sender_id === {{ current_user.id }}) {
+            // Do not show notification for own messages
+            return;
+        }
         const msgDiv = document.createElement('div');
         msgDiv.className = 'mb-3';
         msgDiv.innerHTML = `<span class="font-bold text-violet-300">${data.username}</span> <span class="text-xs text-violet-500 ml-2">${data.timestamp}</span><div class="text-violet-100 ml-4">${data.content}</div>`;
         chatMessages.appendChild(msgDiv);
         chatMessages.scrollTop = chatMessages.scrollHeight;
+        // Show browser notification for other users' messages
+        if (document.hidden && window.Notification && Notification.permission === 'granted') {
+            new Notification(`${data.username} says:`, { body: data.content });
+        }
     });
 
     chatForm.addEventListener('submit', function(e) {
@@ -44,6 +53,14 @@
         const content = chatInput.value.trim();
         if (content) {
             socket.emit('send_message', { post_id: postId, content: content });
+            // Optimistically append the message
+            const now = new Date();
+            const timestamp = now.toLocaleString('en-US', { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true });
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'mb-3';
+            msgDiv.innerHTML = `<span class="font-bold text-violet-400">You</span> <span class="text-xs text-violet-500 ml-2">${timestamp}</span><div class="text-violet-100 ml-4">${content}</div>`;
+            chatMessages.appendChild(msgDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
             chatInput.value = '';
         }
     });

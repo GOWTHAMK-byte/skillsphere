@@ -2,14 +2,20 @@
 
 {% block content %}
 <div class="w-full py-10 px-0">
-    <div class="flex justify-between items-center mb-10 px-8">
-        <h1 class="text-4xl font-extrabold text-violet-200 tracking-tight drop-shadow">Open Opportunities</h1>
-        <div class="flex gap-4">
+    <!-- Animated Hero Section -->
+    <div class="flex flex-col md:flex-row justify-between items-center mb-10 px-8 gap-6 md:gap-0">
+        <div>
+            <h1 class="text-5xl md:text-6xl font-extrabold tracking-tight drop-shadow bg-clip-text text-transparent bg-gradient-to-r from-violet-300 via-fuchsia-400 to-blue-400 animate-gradient-x glow-text">
+                Open Opportunities
+            </h1>
+            <div class="h-1 w-24 mt-4 rounded-full bg-gradient-to-r from-fuchsia-500 via-violet-400 to-blue-400 animate-pulse shadow-lg"></div>
+        </div>
+        <div class="flex gap-4 mt-6 md:mt-0">
             {% if current_user.is_authenticated %}
-                <a href="{{ url_for('create_post') }}" class="inline-block px-6 py-3 bg-gradient-to-r from-violet-700 to-black hover:from-violet-800 hover:to-violet-900 text-white font-bold rounded-xl text-base shadow-md transition-all border border-violet-900">
+                <a href="{{ url_for('create_post') }}" class="inline-block px-6 py-3 bg-gradient-to-r from-violet-700 to-black hover:from-violet-800 hover:to-violet-900 text-white font-bold rounded-xl text-base shadow-md transition-all border border-violet-900 hover:scale-105 focus:ring-2 focus:ring-violet-400">
                     + Create Post
                 </a>
-                <a href="{{ url_for('recommend') }}" class="inline-block px-6 py-3 bg-gradient-to-r from-green-700 to-black hover:from-green-800 hover:to-black text-white font-bold rounded-xl text-base shadow-md transition-all border border-green-900">
+                <a href="{{ url_for('recommend') }}" class="inline-block px-6 py-3 bg-gradient-to-r from-green-700 to-black hover:from-green-800 hover:to-black text-white font-bold rounded-xl text-base shadow-md transition-all border border-green-900 hover:scale-105 focus:ring-2 focus:ring-green-400">
                     Recommend
                 </a>
             {% endif %}
@@ -25,11 +31,11 @@
             <label for="event_type" class="block text-violet-200 font-semibold mb-1">Event Type</label>
             <select id="event_type" name="event_type" class="w-full px-4 py-2 rounded-lg border border-violet-800 bg-black/40 text-violet-100">
                 <option value="">Any</option>
-                <option value="Hackathon" {% if request.args.get('event_type') == 'Hackathon' %}selected{% endif %}>Hackathon</option>
-                <option value="Project" {% if request.args.get('event_type') == 'Project' %}selected{% endif %}>Project</option>
-                <option value="Competition" {% if request.args.get('event_type') == 'Competition' %}selected{% endif %}>Competition</option>
-                <option value="Collaboration" {% if request.args.get('event_type') == 'Collaboration' %}selected{% endif %}>Collaboration</option>
-                <option value="Other" {% if request.args.get('event_type') == 'Other' %}selected{% endif %}>Other</option>
+                <option value="Hackathon" {{ 'selected' if request.args.get('event_type') == 'Hackathon' else '' }}>Hackathon</option>
+                <option value="Project" {{ 'selected' if request.args.get('event_type') == 'Project' else '' }}>Project</option>
+                <option value="Competition" {{ 'selected' if request.args.get('event_type') == 'Competition' else '' }}>Competition</option>
+                <option value="Collaboration" {{ 'selected' if request.args.get('event_type') == 'Collaboration' else '' }}>Collaboration</option>
+                <option value="Other" {{ 'selected' if request.args.get('event_type') == 'Other' else '' }}>Other</option>
             </select>
         </div>
         <div>
@@ -55,16 +61,58 @@
             </div>
             {% endif %}
             <div class="flex justify-center mt-8">
-                <a href="{{ url_for('index') }}" class="px-6 py-3 bg-gradient-to-r from-violet-700 to-black hover:from-violet-800 hover:to-violet-900 text-white font-bold rounded-xl text-base shadow-md transition-all border border-violet-900">Back to All Posts</a>
+                <a href="{{ url_for('index') }}" class="px-6 py-3 bg-gradient-to-r from-violet-700 to-black hover:from-violet-800 hover:to-violet-900 text-white font-bold rounded-xl text-base shadow-md transition-all border border-violet-900">
+                    Back to All Posts
+                </a>
             </div>
         </div>
     {% elif not recommended_mode %}
         {% if posts %}
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 px-8">
             {% for post in posts %}
-                {% include '_post.html' %}
+                <div class="post-card group transition-all duration-500 ease-out opacity-0 translate-y-8 will-change-transform">
+                    {% include '_post.html' %}
+                </div>
             {% endfor %}
         </div>
+        <script>
+        // Animate post cards in with staggered fade/slide
+        document.addEventListener('DOMContentLoaded', () => {
+            const cards = document.querySelectorAll('.post-card');
+            cards.forEach((card, i) => {
+                setTimeout(() => {
+                    card.classList.remove('opacity-0', 'translate-y-8');
+                    card.classList.add('opacity-100', 'translate-y-0');
+                }, 120 + i * 90);
+            });
+        });
+        </script>
+        <style>
+        .post-card {
+            opacity: 0;
+            transform: translateY(32px);
+        }
+        .post-card.opacity-100 {
+            opacity: 1 !important;
+            transform: none !important;
+        }
+        .post-card:hover {
+            box-shadow: 0 0 32px 0 #a78bfa55, 0 2px 16px 0 #0008;
+            border-color: #a78bfa;
+            transition: box-shadow 0.3s, border-color 0.3s;
+        }
+        .glow-text {
+            text-shadow: 0 0 16px #a78bfa88, 0 2px 8px #0008;
+        }
+        @keyframes gradient-x {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        .animate-gradient-x {
+            background-size: 200% 200%;
+            animation: gradient-x 6s ease-in-out infinite;
+        }
+        </style>
         {% else %}
         <div class="col-span-full bg-black/70 p-12 rounded-2xl shadow-xl text-center border border-violet-900">
             <p class="text-violet-300 text-lg">No posts available. Be the first to create one!</p>
@@ -74,11 +122,71 @@
         <div class="mb-12 px-8">
             <h2 class="text-2xl font-bold text-violet-300 mb-4">Recommended for You</h2>
             {% if recommended_posts %}
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div id="recommend-swipe-stack" class="relative w-full max-w-xl mx-auto min-h-[400px]">
                 {% for post in recommended_posts %}
-                    {% include '_post.html' %}
+                <div class="recommend-card absolute inset-0 bg-black/80 border border-violet-900 rounded-2xl shadow-2xl p-0 mb-6 transition-transform duration-300 will-change-transform z-{{ recommended_posts|length - loop.index0 }} {% if not loop.first %}hidden{% endif %} {% if loop.first %}top-card{% endif %}" data-post-id="{{ post.id }}" style="touch-action: pan-y;">
+                    <div class="p-0">
+                        {% include '_post.html' %}
+                    </div>
+                </div>
                 {% endfor %}
             </div>
+            <div id="no-more-recommend" class="hidden text-center text-violet-400 text-xl mt-12">No more recommendations. Check back later!</div>
+            <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
+            <script>
+            function updateSwipeControls() {
+                // Only update top-card class, and show only the top card
+                const cards = Array.from(document.querySelectorAll('.recommend-card'));
+                cards.forEach((card, i) => {
+                    card.classList.remove('top-card');
+                    card.classList.add('hidden');
+                });
+                if (cards.length > 0) {
+                    cards[0].classList.add('top-card');
+                    cards[0].classList.remove('hidden');
+                }
+            }
+            const stack = document.getElementById('recommend-swipe-stack');
+            let cards = Array.from(document.querySelectorAll('.recommend-card'));
+            function removeCard(card) {
+                card.parentNode.removeChild(card);
+                cards = Array.from(document.querySelectorAll('.recommend-card'));
+                updateSwipeControls();
+                if (cards.length === 0) {
+                    document.getElementById('no-more-recommend').classList.remove('hidden');
+                }
+            }
+            function handleAction(card, action) {
+                const postId = card.getAttribute('data-post-id');
+                fetch(`/api/recommend/${action}/` + postId, {method: 'POST', headers: {'X-Requested-With': 'XMLHttpRequest'}})
+                    .then(() => removeCard(card));
+            }
+            function attachSwipeHandlers(card) {
+                const mc = new Hammer(card);
+                mc.on('swipeleft', function() {
+                    card.style.transform = 'translateX(-120vw) rotate(-15deg)';
+                    setTimeout(() => handleAction(card, 'ignore'), 300);
+                });
+                mc.on('swiperight', function() {
+                    card.style.transform = 'translateX(120vw) rotate(15deg)';
+                    setTimeout(() => handleAction(card, 'apply'), 300);
+                });
+            }
+            // Attach handlers to all cards for touch
+            cards.forEach(card => attachSwipeHandlers(card));
+            // No button handlers needed
+            const observer = new MutationObserver(() => {
+                updateSwipeControls();
+            });
+            observer.observe(stack, { childList: true });
+            </script>
+            <style>
+            .recommend-card.top-card {
+                box-shadow: 0 0 32px 0 #a78bfa99, 0 2px 16px 0 #000a;
+                border-color: #a78bfa;
+                z-index: 100 !important;
+            }
+            </style>
             {% else %}
             <div class="col-span-full bg-black/70 p-12 rounded-2xl shadow-xl text-center border border-violet-900">
                 <p class="text-violet-300 text-lg">No recommended posts available. Be the first to create one!</p>
@@ -90,49 +198,8 @@
         </div>
     {% endif %}
 
-    <!-- Messages Panel for logged-in users -->
     {% if current_user.is_authenticated %}
-    <div class="mb-8 px-8">
-        <div class="bg-black/70 border border-fuchsia-900 rounded-2xl p-6 shadow-xl">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-xl font-bold text-fuchsia-200 flex items-center gap-2">
-                    <svg class="h-6 w-6 text-fuchsia-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8h2a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2v-8a2 2 0 012-2h2M15 10V6a3 3 0 00-6 0v4" /></svg>
-                    Recent Messages
-                </h2>
-                <a href="{{ url_for('messages') }}" class="text-fuchsia-400 hover:underline text-sm font-semibold">View All</a>
-            </div>
-            {% if messages_summary %}
-            <ul class="divide-y divide-fuchsia-900/60">
-                {% for chat in messages_summary %}
-                <li class="flex items-center gap-4 py-3">
-                    <div class="flex-1 min-w-0">
-                        <a href="{{ url_for('chat', post_id=chat.post.id) }}" class="block font-bold text-base text-fuchsia-100 hover:underline">
-                            {{ chat.post.event_name }}
-                        </a>
-                        <div class="text-xs text-fuchsia-400 mt-1 truncate">
-                            {% if chat.latest_msg %}
-                                <span class="font-semibold">{{ chat.latest_msg.sender.username }}:</span>
-                                {{ chat.latest_msg.content[:40] }}{% if chat.latest_msg.content|length > 40 %}...{% endif %}
-                                <span class="ml-2 text-fuchsia-600">{{ chat.latest_msg.timestamp.strftime('%b %d, %I:%M %p') }}</span>
-                            {% else %}
-                                <span class="italic text-fuchsia-700">No messages yet</span>
-                            {% endif %}
-                        </div>
-                    </div>
-                    {% if chat.unread_count > 0 %}
-                    <span class="ml-2 bg-fuchsia-600 text-white text-xs rounded-full px-3 py-1 font-bold">{{ chat.unread_count }}</span>
-                    {% endif %}
-                    <a href="{{ url_for('chat', post_id=chat.post.id) }}" class="ml-2 bg-fuchsia-800 hover:bg-fuchsia-900 text-white px-3 py-1 rounded-lg text-xs font-semibold border border-fuchsia-900">Open</a>
-                </li>
-                {% endfor %}
-            </ul>
-            {% else %}
-            <div class="text-center text-fuchsia-400 py-6">
-                <span class="italic">You have no team chats yet.</span>
-            </div>
-            {% endif %}
-        </div>
-    </div>
+    <!-- Removed duplicate chat icon and badge logic; now handled globally in base.html -->
     {% endif %}
 </div>
 {% endblock %}
