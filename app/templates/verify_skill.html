@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto bg-black/80 rounded-2xl shadow-xl p-8 mt-8 border border-violet-900">
+    <div class="text-center">
+        <h1 class="text-3xl font-bold text-violet-200 tracking-tight">Verify Skill</h1>
+        <div class="inline-block bg-violet-900/50 text-violet-100 text-xl font-semibold px-6 py-2 rounded-full shadow border border-violet-800 my-4">
+            {{ skill.name }}
+        </div>
+        <p class="text-violet-300 max-w-md mx-auto">
+            Submitting valid proof will verify this skill, giving you a one-time +1 level bonus and building trust with potential teammates.
+        </p>
+    </div>
+
+    <!-- --- NEW: Verification Result Box --- -->
+    {% if rejection_reason %}
+    <div class="my-6 bg-yellow-900/30 border border-yellow-700 text-yellow-200 px-4 py-3 rounded-lg relative" role="alert">
+        <div class="flex items-center">
+            <svg class="w-6 h-6 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+            <div>
+                <strong class="font-bold">Verification Rejected:</strong>
+                <span class="block sm:inline">{{ rejection_reason }}</span>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    <!-- --- END NEW BOX --- -->
+
+    <form method="POST" enctype="multipart/form-data" novalidate class="mt-10">
+        {{ form.hidden_tag() }}
+        <div class="space-y-8">
+            <!-- Step 1: Choose Proof Type -->
+            <div>
+                <label class="block text-violet-200 text-lg font-semibold mb-3"><span class="bg-violet-700 text-black rounded-full w-8 h-8 inline-flex items-center justify-center mr-2">1</span> Choose your proof of skill</label>
+                <!-- This is the hidden select field that our JS will control -->
+                {{ form.proof_type(class="hidden", id="proof_type_select") }}
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4" id="proof-type-cards">
+                    <!-- Certificate Card -->
+                    <div data-value="certificate" class="proof-card border-2 border-violet-800 p-4 rounded-lg text-center cursor-pointer hover:border-violet-500 transition-all duration-200">
+                        <svg class="w-10 h-10 mx-auto text-violet-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+                        <h3 class="font-semibold text-violet-200">Certificate</h3>
+                        <p class="text-xs text-violet-400">Upload a PDF/Image</p>
+                    </div>
+                    <!-- Project Card -->
+                    <div data-value="project" class="proof-card border-2 border-violet-800 p-4 rounded-lg text-center cursor-pointer hover:border-violet-500 transition-all duration-200">
+                        <svg class="w-10 h-10 mx-auto text-violet-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
+                        <h3 class="font-semibold text-violet-200">Project</h3>
+                        <p class="text-xs text-violet-400">Link to a public URL</p>
+                    </div>
+                    <!-- Event Card -->
+                    <div data-value="event" class="proof-card border-2 border-violet-800 p-4 rounded-lg text-center cursor-pointer hover:border-violet-500 transition-all duration-200">
+                        <svg class="w-10 h-10 mx-auto text-violet-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.834 9.168-4.432" /></svg>
+                        <h3 class="font-semibold text-violet-200">Past Event</h3>
+                        <p class="text-xs text-violet-400">Select from this site</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2: Provide Proof Document/Link -->
+            <div>
+                 <label class="block text-violet-200 text-lg font-semibold mb-3"><span class="bg-violet-700 text-black rounded-full w-8 h-8 inline-flex items-center justify-center mr-2">2</span> Provide your proof</label>
+                <!-- Project URL Field (Conditional) -->
+                <div id="project_url_field" class="hidden">
+                    {{ form.project_url.label(class="block text-violet-200 text-sm font-semibold mb-2") }}
+                    {{ form.project_url(class="w-full px-3 py-2 bg-black/60 border border-violet-800 rounded-lg text-violet-100 focus:outline-none focus:ring-2 focus:ring-violet-600 placeholder-violet-400", placeholder="https://github.com/your-repo/your-project") }}
+                    {% for error in form.project_url.errors %}<span class="text-red-400 text-xs mt-1">{{ error }}</span>{% endfor %}
+                </div>
+
+                <!-- Certificate File Upload Field (Conditional) -->
+                <div id="certificate_file_field" class="hidden">
+                    {{ form.certificate_file.label(class="block text-violet-200 text-sm font-semibold mb-2") }}
+                    {{ form.certificate_file(class="block w-full text-sm text-violet-200 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:font-semibold file:bg-violet-900/60 file:text-violet-200 hover:file:bg-violet-800/80 focus:outline-none") }}
+                    {% for error in form.certificate_file.errors %}<span class="text-red-400 text-xs mt-1">{{ error }}</span>{% endfor %}
+                </div>
+
+                <!-- Event Selection Field (Conditional) -->
+                <div id="event_id_field" class="hidden">
+                     {{ form.event_id.label(class="block text-violet-200 text-sm font-semibold mb-2") }}
+                     {{ form.event_id(class="w-full px-3 py-2 bg-black/60 border border-violet-800 rounded-lg text-violet-100 focus:outline-none focus:ring-2 focus:ring-violet-600") }}
+                     {% for error in form.event_id.errors %}<span class="text-red-400 text-xs mt-1">{{ error }}</span>{% endfor %}
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="pt-4 border-t border-violet-900/50">
+                {{ form.submit(class="w-full bg-gradient-to-r from-violet-700 to-violet-900 hover:from-violet-800 hover:to-black text-white font-bold py-3 px-4 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-violet-600 focus:ring-offset-2 transition-all duration-200 text-lg", value="Submit for Verification") }}
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const proofTypeSelect = document.getElementById('proof_type_select');
+        const cards = document.querySelectorAll('.proof-card');
+
+        const projectUrlField = document.getElementById('project_url_field');
+        const certificateFileField = document.getElementById('certificate_file_field');
+        const eventIdField = document.getElementById('event_id_field');
+
+        function toggleFields(selectedValue) {
+            projectUrlField.classList.add('hidden');
+            certificateFileField.classList.add('hidden');
+            eventIdField.classList.add('hidden');
+
+            if (selectedValue === 'project') {
+                projectUrlField.classList.remove('hidden');
+            } else if (selectedValue === 'certificate') {
+                certificateFileField.classList.remove('hidden');
+            } else if (selectedValue === 'event') {
+                eventIdField.classList.remove('hidden');
+            }
+        }
+
+        cards.forEach(card => {
+            card.addEventListener('click', function() {
+                const selectedValue = this.dataset.value;
+                proofTypeSelect.value = selectedValue;
+                cards.forEach(c => c.classList.remove('border-cyan-400', 'bg-violet-900/50'));
+                this.classList.add('border-cyan-400', 'bg-violet-900/50');
+                toggleFields(selectedValue);
+            });
+        });
+
+        const initialValue = 'certificate';
+        proofTypeSelect.value = initialValue;
+        document.querySelector(`.proof-card[data-value="${initialValue}"]`).classList.add('border-cyan-400', 'bg-violet-900/50');
+        toggleFields(initialValue);
+    });
+</script>
+{% endblock %}
+

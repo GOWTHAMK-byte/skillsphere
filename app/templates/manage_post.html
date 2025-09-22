@@ -1,249 +1,208 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto bg-gradient-to-br from-violet-950 via-fuchsia-950 to-black rounded-3xl shadow-2xl p-8 mt-12 border-2 border-violet-800/80 backdrop-blur-md relative overflow-hidden">
-    <div class="absolute -top-16 -right-16 opacity-10 pointer-events-none select-none">
-        <svg width="300" height="300" fill="none"><circle cx="150" cy="150" r="130" stroke="#a78bfa" stroke-width="30" /></svg>
-    </div>
-    <h1 class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-300 via-fuchsia-400 to-blue-400 mb-4 tracking-tight drop-shadow">Manage Applicants for: <span class="text-violet-200">{{ post.event_name }}</span></h1>
-    <a href="{{ url_for('index') }}" class="text-violet-400 hover:underline mb-4 inline-block text-xs">&larr; Back to Posts</a>
-    <div class="mb-8 flex flex-wrap gap-6 items-center justify-between">
-        <div>
-            <span class="font-semibold text-violet-200 text-xs">Team Members:</span>
-            <ul class="flex flex-wrap gap-2 mt-2">
-                {% for member in post.teammates %}
-                    <li class="flex items-center gap-1 bg-violet-900/70 text-violet-100 px-3 py-1 rounded-full text-xs font-semibold border border-violet-800 shadow">
-                        {% if member.profile.avatar_filename %}
-                            <img src="{{ url_for('static', filename='avatars/' + member.profile.avatar_filename) }}" class="w-6 h-6 rounded-full object-cover border border-violet-700" alt="{{ member.username }}'s avatar">
-                        {% else %}
-                            <span class="w-6 h-6 flex items-center justify-center rounded-full bg-violet-800 text-violet-200 font-bold">{{ member.username[0]|upper }}</span>
-                        {% endif %}
-                        <span>{{ member.username }}{% if member == current_user %} (You){% endif %}</span>
-                        {% if member == post.creator %}<span class="ml-1 bg-gradient-to-r from-fuchsia-700 to-violet-700 text-white px-2 py-0.5 rounded-full text-[10px] font-bold ml-2">Creator</span>{% endif %}
-                    </li>
-                {% else %}
-                    <li class="text-violet-400 text-xs">No team members yet.</li>
-                {% endfor %}
-            </ul>
-            {% if (post.male_slots or 0) + (post.female_slots or 0) > 0 %}
-            <div class="mt-2 text-xs text-violet-400 font-semibold">
-                Team Gender Ratio: <span class="text-violet-200">{{ post.male_slots or 0 }}M / {{ post.female_slots or 0 }}F</span>
-            </div>
-            {% endif %}
-        </div>
-        <div class="ml-auto flex flex-col gap-2 items-end">
-            <form method="post">
-                {% if post.applications_closed %}
-                    <button name="open_applications" class="relative bg-gradient-to-r from-fuchsia-700 via-violet-800 to-violet-900 text-white px-4 py-2 rounded-xl shadow-lg text-xs font-bold hover:from-fuchsia-600 hover:to-violet-950 transition focus:outline-none focus:ring-2 focus:ring-fuchsia-400 overflow-hidden group" aria-label="Reopen applications">
-                        <span class="z-10 relative">Reopen</span>
-                        <span class="absolute inset-0 opacity-0 group-hover:opacity-30 transition bg-fuchsia-400 blur-xl animate-pulse"></span>
-                    </button>
-                {% else %}
-                    <button name="close_applications" class="relative bg-gradient-to-r from-violet-800 via-fuchsia-900 to-black text-fuchsia-100 px-4 py-2 rounded-xl shadow-lg text-xs font-bold hover:from-violet-900 hover:to-black transition focus:outline-none focus:ring-2 focus:ring-violet-400 overflow-hidden group" aria-label="Close applications">
-                        <span class="z-10 relative">Close</span>
-                        <span class="absolute inset-0 opacity-0 group-hover:opacity-30 transition bg-violet-400 blur-xl animate-pulse"></span>
-                    </button>
-                {% endif %}
-            </form>
-            <form method="post" action="{{ url_for('delete_post', post_id=post.id) }}" onsubmit="return confirm('Are you sure you want to delete this post? This action cannot be undone.');">
-                <button type="submit" class="mt-2 bg-gradient-to-r from-red-700 via-fuchsia-900 to-black text-white px-4 py-2 rounded-xl shadow-lg text-xs font-bold hover:from-red-800 hover:to-black transition focus:outline-none focus:ring-2 focus:ring-red-400">
-                    Delete Post
-                </button>
-            </form>
-        </div>
-    </div>
-    <hr class="border-violet-900/40 mb-8">
-    {% if recommended_users %}
-    <h2 class="text-xl font-bold text-green-200 mb-4 flex items-center gap-2">
-        <svg class="h-6 w-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
-        Recommended Users
-    </h2>
-    <div class="space-y-4 mb-10">
-        {% for user in recommended_users %}
-        <div class="flex flex-col md:flex-row gap-4 bg-gradient-to-br from-green-900/60 via-violet-900/60 to-black/60 rounded-xl p-4 border border-green-800/40 shadow">
-            <div class="flex flex-col items-center md:items-start md:w-1/4">
-                <div class="w-20 h-20 rounded-full bg-gradient-to-br from-violet-900 to-black flex items-center justify-center border-2 border-green-700 shadow mb-2">
-                    {% if user.profile.avatar_filename %}
-                        <img src="{{ url_for('static', filename='avatars/' + user.profile.avatar_filename) }}" class="w-20 h-20 rounded-full object-cover" alt="{{ user.username }}'s avatar">
+
+{# --- FIX: Define the reusable macro at the top of the file, before it is called --- #}
+{% macro applicant_card(applicant, post, applications) %}
+    {# Determine if this card is for an applicant or a recommendation #}
+    {% set app = applications|selectattr('applicant_id', 'equalto', applicant.id)|first %}
+
+    <div class="bg-black/30 backdrop-blur-md border border-violet-900/60 rounded-2xl shadow-lg p-5 transition-all duration-300 hover:border-violet-700/80 hover:shadow-violet-500/20">
+        <div class="flex flex-col sm:flex-row items-start gap-5">
+            <div class="flex-shrink-0 text-center">
+                 <a href="{{ url_for('user', username=applicant.username) }}">
+                    {% if applicant.profile.avatar_filename %}
+                        <img src="{{ url_for('static', filename='avatars/' + applicant.profile.avatar_filename) }}" class="w-20 h-20 rounded-full object-cover border-2 border-violet-700/60 shadow-md">
                     {% else %}
-                        <span class="text-2xl text-green-300 font-bold">{{ user.username[0]|upper }}</span>
+                        <div class="w-20 h-20 bg-gradient-to-br from-violet-900 to-black rounded-full flex items-center justify-center border-2 border-violet-700/60 shadow-md">
+                            <span class="text-3xl text-violet-300 font-extrabold">{{ applicant.username[0]|upper }}</span>
+                        </div>
                     {% endif %}
-                </div>
-                <a href="mailto:{{ user.email }}" class="text-xs text-green-300 hover:underline break-all">{{ user.email }}</a>
+                </a>
+                <a href="{{ url_for('user', username=applicant.username) }}" class="mt-2 text-lg font-bold text-violet-200 hover:underline">{{ applicant.username }}</a>
             </div>
-            <div class="flex-1">
-                <a href="{{ url_for('user', username=user.username) }}" class="font-semibold text-green-200 hover:underline text-lg">{{ user.username }}</a>
-                <div class="text-xs text-green-300 mt-1">
-                    {{ user.profile.bio|default('No bio provided.', true) }}
-                </div>
-                <div class="text-xs text-green-400 mt-1">
-                    <span class="font-semibold">College:</span> {{ user.profile.college or 'N/A' }}<br>
-                    <span class="font-semibold">Year:</span> {{ user.profile.year or 'N/A' }}<br>
-                    <span class="font-semibold">Degree:</span> {{ user.profile.degree or 'N/A' }}<br>
-                    <span class="font-semibold">Location:</span> {{ user.profile.location or 'N/A' }}<br>
-                    <span class="font-semibold">Gender:</span> {{ user.profile.gender or 'N/A' }}
-                </div>
-                <div class="text-xs text-green-400 mt-1">
-                    <span class="font-semibold">Skills:</span> {% for skill in user.profile.skills %}<span class="inline-block bg-green-800/60 text-green-200 px-2 py-0.5 rounded-full mr-1 mb-1">{{ skill.name }}</span>{% endfor %}
-                </div>
-                <div class="text-xs text-green-400 mt-1 flex flex-wrap gap-2">
-                    {% if user.profile.github_url %}
-                        <a href="{{ user.profile.github_url }}" target="_blank" class="underline text-green-300">GitHub</a>
-                    {% endif %}
-                    {% if user.profile.linkedin_url %}
-                        <a href="{{ user.profile.linkedin_url }}" target="_blank" class="underline text-green-300">LinkedIn</a>
-                    {% endif %}
-                    {% if user.profile.resume_file %}
-                        <a href="{{ url_for('static', filename='resumes/' + user.profile.resume_file) }}" target="_blank" class="underline text-green-300">Resume</a>
-                    {% endif %}
-                </div>
-            </div>
-            <div class="flex flex-col justify-center items-center md:items-end md:w-1/6 mt-2 md:mt-0">
-                <a href="{{ url_for('user', username=user.username) }}" class="px-4 py-2 bg-green-700 hover:bg-green-800 text-white rounded-lg text-xs font-bold shadow transition">View Profile</a>
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}
-    <hr class="border-violet-900/40 mb-8">
-    <h2 class="text-xl font-bold text-violet-100 mb-4 flex items-center gap-2">
-        <svg class="h-6 w-6 text-fuchsia-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 01.88 7.903A4.992 4.992 0 0112 21a4.992 4.992 0 01-4.88-6.097A4 4 0 118 7" /></svg>
-        Applications
-    </h2>
-    {% if applications %}
-        <div class="space-y-6">
-            {% for app in applications %}
-                <div class="bg-gradient-to-br from-black/90 via-[#1a1333]/90 to-[#3b197a]/90 rounded-2xl shadow-lg p-6 flex items-center justify-between swipe-card relative border-2 border-violet-900/60 transition-transform duration-200 group">
-                    <div class="flex items-center space-x-4">
-                        <div class="w-12 h-12 rounded-full bg-gradient-to-br from-violet-900 to-black flex items-center justify-center border-2 border-violet-700 shadow">
-                            {% if app.applicant.profile.avatar_filename %}
-                                <img src="{{ url_for('static', filename='avatars/' + app.applicant.profile.avatar_filename) }}" class="w-12 h-12 rounded-full object-cover" alt="{{ app.applicant.username }}'s avatar">
+            <div class="flex-1 min-w-0">
+                <p class="text-sm text-violet-300 italic mb-3">"{{ applicant.profile.bio|truncate(120) if applicant.profile.bio else 'No bio provided.' }}"</p>
+                <div>
+                    <h4 class="text-sm font-semibold text-violet-400 mb-2">Skill Match</h4>
+                    <div class="flex flex-wrap gap-2">
+                        {% set user_skills = applicant.profile.skills|map(attribute='name')|list %}
+                        {% for skill in post.required_skills %}
+                            {% if skill.name in user_skills %}
+                                <span class="bg-green-800/60 text-green-200 px-3 py-1 rounded-full text-xs font-semibold border border-green-700/30 flex items-center gap-1.5">
+                                    <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                                    {{ skill.name }}
+                                </span>
                             {% else %}
-                                <span class="text-lg text-violet-300 font-bold">{{ app.applicant.username[0]|upper }}</span>
+                                <span class="bg-red-800/60 text-red-200 px-3 py-1 rounded-full text-xs font-semibold border border-red-700/30 flex items-center gap-1.5">
+                                    <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+                                    {{ skill.name }}
+                                </span>
                             {% endif %}
-                        </div>
-                        <div>
-                            <a href="{{ url_for('user', username=app.applicant.username) }}" class="font-semibold text-violet-200 hover:underline text-base">{{ app.applicant.username }}</a>
-                            <div class="text-xs text-violet-400">{{ app.applicant.email }}</div>
-                            <div class="text-xs text-violet-400">Status: <span class="font-semibold">{{ app.status }}</span></div>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        {% if app.status == 'Pending' %}
-                        <form method="post" class="flex space-x-2 swipe-action-form" aria-label="Application actions for {{ app.applicant.username }}">
-                            <input type="hidden" name="app_id" value="{{ app.id }}">
-                            <button name="action" value="accept" class="relative flex items-center gap-1 bg-gradient-to-r from-fuchsia-700 via-violet-700 to-violet-900 text-white px-3 py-1.5 rounded-lg shadow-lg text-xs font-bold hover:from-fuchsia-600 hover:to-violet-950 transition focus:outline-none focus:ring-2 focus:ring-fuchsia-400 overflow-hidden group" aria-label="Accept application" title="Accept">
-                                <svg class="h-4 w-4 z-10 relative" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span class="z-10 relative">Accept</span>
-                                <span class="absolute inset-0 opacity-0 group-hover:opacity-30 transition bg-fuchsia-400 blur-xl animate-pulse"></span>
-                            </button>
-                            <button name="action" value="reject" class="relative flex items-center gap-1 bg-gradient-to-r from-violet-800 via-black to-fuchsia-900 text-fuchsia-100 px-3 py-1.5 rounded-lg shadow-lg text-xs font-bold hover:from-violet-900 hover:to-black transition focus:outline-none focus:ring-2 focus:ring-violet-400 overflow-hidden group" aria-label="Reject application" title="Reject">
-                                <svg class="h-4 w-4 z-10 relative" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-                                <span class="z-10 relative">Reject</span>
-                                <span class="absolute inset-0 opacity-0 group-hover:opacity-30 transition bg-violet-400 blur-xl animate-pulse"></span>
-                            </button>
-                        </form>
-                        <div class="absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-0 swipe-left-indicator transition-opacity duration-200">
-                            <span class="bg-red-700 text-white px-2 py-1 rounded shadow text-xs">Reject</span>
-                        </div>
-                        <div class="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-0 swipe-right-indicator transition-opacity duration-200">
-                            <span class="bg-green-700 text-white px-2 py-1 rounded shadow text-xs">Accept</span>
-                        </div>
-                        {% else %}
-                        <span class="px-3 py-1.5 rounded-lg bg-violet-900/60 text-violet-200 border border-violet-800 text-xs font-semibold">{{ app.status }}</span>
-                        {% endif %}
+                        {% endfor %}
                     </div>
                 </div>
-            {% endfor %}
+            </div>
+             <div class="flex-shrink-0 w-full sm:w-auto flex sm:flex-col items-center justify-center gap-2 mt-4 sm:mt-0">
+                {% if app %} {# It's an applicant #}
+                    {% if app.status == 'Pending' %}
+                    <form method="post" class="w-full sm:w-auto">
+                        <input type="hidden" name="app_id" value="{{ app.id }}">
+                        <button name="action" value="accept" class="w-full text-center flex items-center justify-center gap-2 bg-green-600 hover:bg-green-500 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition-colors text-sm focus-ring">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                            Accept
+                        </button>
+                    </form>
+                    <form method="post" class="w-full sm:w-auto">
+                        <input type="hidden" name="app_id" value="{{ app.id }}">
+                        <button name="action" value="reject" class="w-full text-center flex items-center justify-center gap-2 bg-red-800/80 hover:bg-red-700/90 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition-colors text-sm focus-ring">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"/></svg>
+                            Reject
+                        </button>
+                    </form>
+                    {% else %}
+                        <span class="text-sm font-bold {{ 'text-green-400' if app.status == 'Accepted' else 'text-red-400' }}">{{ app.status }}</span>
+                    {% endif %}
+                {% else %} {# It's a recommendation #}
+                    {# Placeholder for future invite logic #}
+                {% endif %}
+            </div>
         </div>
-    {% else %}
-        <div class="bg-black/70 border border-violet-900 rounded-xl p-8 text-center">
-            <p class="text-violet-400">No applications yet.</p>
+    </div>
+{% endmacro %}
+
+
+<div class="max-w-7xl mx-auto py-8">
+    <!-- Header -->
+    <div class="px-4 text-center md:text-left">
+        <h1 class="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-violet-300 via-fuchsia-400 to-blue-400 mb-2">
+            Manage Post
+        </h1>
+        <p class="text-xl text-violet-300">{{ post.event_name }}</p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-10">
+        <!-- Left Sidebar: Team Roster & Controls -->
+        <div class="lg:col-span-1 space-y-8">
+            <div class="bg-black/30 backdrop-blur-md border border-violet-900/60 rounded-2xl shadow-lg p-6">
+                <h2 class="text-2xl font-bold text-violet-200 mb-4">Team Roster</h2>
+                <div class="space-y-4">
+                    {% if post.teammates %}
+                        {% for member in post.teammates %}
+                        <div class="flex items-center gap-3">
+                            <a href="{{ url_for('user', username=member.username) }}">
+                                {% if member.profile.avatar_filename %}
+                                    <img src="{{ url_for('static', filename='avatars/' + member.profile.avatar_filename) }}" class="w-12 h-12 rounded-full object-cover border-2 border-violet-700/60 shadow-md">
+                                {% else %}
+                                    <div class="w-12 h-12 bg-gradient-to-br from-violet-900 to-black rounded-full flex items-center justify-center border-2 border-violet-700/60 shadow-md">
+                                        <span class="text-xl text-violet-300 font-extrabold">{{ member.username[0]|upper }}</span>
+                                    </div>
+                                {% endif %}
+                            </a>
+                            <div>
+                                <a href="{{ url_for('user', username=member.username) }}" class="font-bold text-violet-200 hover:underline">{{ member.username }}</a>
+                                {% if member == post.creator %}
+                                <span class="block text-xs bg-gradient-to-r from-fuchsia-700 to-violet-700 text-white px-2 py-0.5 rounded-full inline-block mt-1">Creator</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-violet-400 text-sm">No one has been accepted to the team yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="bg-black/30 backdrop-blur-md border border-violet-900/60 rounded-2xl shadow-lg p-6">
+                 <h2 class="text-2xl font-bold text-violet-200 mb-4">Post Controls</h2>
+                 <div class="space-y-3">
+                    <form method="post">
+                        {% if post.applications_closed %}
+                            <button name="open_applications" class="w-full text-center bg-green-600 hover:bg-green-500 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition-colors focus-ring">Reopen Applications</button>
+                        {% else %}
+                            <button name="close_applications" class="w-full text-center bg-yellow-600 hover:bg-yellow-500 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition-colors focus-ring">Close Applications</button>
+                        {% endif %}
+                    </form>
+                    <form method="post" action="{{ url_for('delete_post', post_id=post.id) }}" onsubmit="return confirm('Are you sure you want to delete this post? This action cannot be undone.');">
+                        <button type="submit" class="w-full bg-red-800/80 hover:bg-red-700/90 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition-colors focus-ring">Delete Post</button>
+                    </form>
+                 </div>
+            </div>
         </div>
-    {% endif %}
+
+        <!-- Right Content: Tabs for Applicants and Recommendations -->
+        <div class="lg:col-span-2">
+            <!-- Tabs Navigation -->
+            <div class="mb-6 border-b border-violet-900/60">
+                <nav class="-mb-px flex space-x-6" aria-label="Tabs">
+                    <a href="#" class="tab-link active shrink-0 border-b-2 border-fuchsia-500 px-1 py-3 text-base font-semibold text-fuchsia-400" data-tab="applicants">Applicants ({{ applications|length }})</a>
+                    <a href="#" class="tab-link shrink-0 border-b-2 border-transparent px-1 py-3 text-base font-semibold text-violet-300 hover:border-violet-400 hover:text-violet-200" data-tab="recommendations">Recommendations ({{ recommended_users|length }})</a>
+                </nav>
+            </div>
+
+            <!-- Applicants Tab -->
+            <div id="applicants" class="tab-content space-y-6">
+                {% if applications %}
+                    {% for app in applications %}
+                        {{ applicant_card(app.applicant, post, applications) }}
+                    {% endfor %}
+                {% else %}
+                    <div class="bg-black/30 border-2 border-dashed border-violet-900/60 rounded-xl p-12 text-center">
+                        <svg class="mx-auto h-12 w-12 text-violet-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 01.88 7.903A4.992 4.992 0 0112 21a4.992 4.992 0 01-4.88-6.097A4 4 0 118 7" /></svg>
+                        <h3 class="mt-4 text-lg font-semibold text-white">No Pending Applications</h3>
+                        <p class="mt-1 text-sm text-violet-300">Share your post to attract applicants!</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Recommendations Tab -->
+            <div id="recommendations" class="tab-content hidden space-y-6">
+                 {% if recommended_users %}
+                    {% for user in recommended_users %}
+                        {{ applicant_card(user, post, applications) }}
+                    {% endfor %}
+                {% else %}
+                    <div class="bg-black/30 border-2 border-dashed border-violet-900/60 rounded-xl p-12 text-center">
+                        <svg class="mx-auto h-12 w-12 text-violet-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M12 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                        <h3 class="mt-4 text-lg font-semibold text-white">No Recommendations</h3>
+                        <p class="mt-1 text-sm text-violet-300">Our AI couldn't find any suitable users to recommend right now.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
-{{ super() }}
 <script>
-// Swipe left/right to reject/accept
-document.querySelectorAll('.swipe-card').forEach(function(card) {
-    let startX = 0, currentX = 0, isDragging = false;
-    let threshold = 80; // px
-    let form = card.querySelector('.swipe-action-form');
-    let leftIndicator = card.querySelector('.swipe-left-indicator');
-    let rightIndicator = card.querySelector('.swipe-right-indicator');
+document.addEventListener('DOMContentLoaded', () => {
+    // Tab switching logic
+    const tabs = document.querySelectorAll('.tab-link');
+    const tabContents = document.querySelectorAll('.tab-content');
 
-    function setTransform(x) {
-        card.style.transform = `translateX(${x}px)`;
-        if (x < -threshold/2) {
-            leftIndicator.style.opacity = 1;
-        } else {
-            leftIndicator.style.opacity = 0;
-        }
-        if (x > threshold/2) {
-            rightIndicator.style.opacity = 1;
-        } else {
-            rightIndicator.style.opacity = 0;
-        }
-    }
+    tabs.forEach(tab => {
+        tab.addEventListener('click', e => {
+            e.preventDefault();
+            const target = tab.dataset.tab;
 
-    function resetTransform() {
-        card.style.transform = '';
-        leftIndicator.style.opacity = 0;
-        rightIndicator.style.opacity = 0;
-    }
+            tabs.forEach(t => {
+                t.classList.remove('active', 'border-fuchsia-500', 'text-fuchsia-400');
+                t.classList.add('border-transparent', 'text-violet-300', 'hover:border-violet-400', 'hover:text-violet-200');
+            });
+            tab.classList.add('active', 'border-fuchsia-500', 'text-fuchsia-400');
+            tab.classList.remove('border-transparent', 'text-violet-300');
 
-    card.addEventListener('touchstart', function(e) {
-        if (!form) return;
-        isDragging = true;
-        startX = e.touches[0].clientX;
-    });
-    card.addEventListener('touchmove', function(e) {
-        if (!isDragging) return;
-        currentX = e.touches[0].clientX;
-        setTransform(currentX - startX);
-    });
-    card.addEventListener('touchend', function(e) {
-        if (!isDragging) return;
-        isDragging = false;
-        let diff = currentX - startX;
-        if (diff < -threshold) {
-            // Swipe left: reject
-            form.querySelector('button[value="reject"]').click();
-        } else if (diff > threshold) {
-            // Swipe right: accept
-            form.querySelector('button[value="accept"]').click();
-        } else {
-            resetTransform();
-        }
-    });
-    // Mouse drag for desktop
-    card.addEventListener('mousedown', function(e) {
-        if (!form) return;
-        isDragging = true;
-        startX = e.clientX;
-        card.style.transition = 'none';
-    });
-    document.addEventListener('mousemove', function(e) {
-        if (!isDragging) return;
-        currentX = e.clientX;
-        setTransform(currentX - startX);
-    });
-    document.addEventListener('mouseup', function(e) {
-        if (!isDragging) return;
-        isDragging = false;
-        card.style.transition = '';
-        let diff = currentX - startX;
-        if (diff < -threshold) {
-            form.querySelector('button[value="reject"]').click();
-        } else if (diff > threshold) {
-            form.querySelector('button[value="accept"]').click();
-        } else {
-            resetTransform();
-        }
+            tabContents.forEach(content => {
+                if (content.id === target) {
+                    content.classList.remove('hidden');
+                } else {
+                    content.classList.add('hidden');
+                }
+            });
+        });
     });
 });
 </script>
 {% endblock %}
+

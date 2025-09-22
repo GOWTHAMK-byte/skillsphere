@@ -6,12 +6,10 @@ from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timezone
 
-profile_skills = db.Table(
-    'profile_skills',
-    db.Model.metadata,
-    sa.Column('profile_id', sa.ForeignKey('profile.id'), primary_key=True),
-    sa.Column('skill_id', sa.ForeignKey('skill.id'), primary_key=True)
-)
+# --- REMOVED ---
+# The old profile_skills helper table is no longer needed.
+# profile_skills = db.Table(...)
+
 post_required_skills = db.Table(
     'post_required_skills',
     db.Model.metadata,
@@ -24,9 +22,30 @@ post_teammates = db.Table(
     sa.Column('post_id', sa.ForeignKey('post.id'), primary_key=True),
     sa.Column('user_id', sa.ForeignKey('user.id'), primary_key=True)
 )
+
+
 @login.user_loader
 def load_user(id):
     return db.session.get(User, int(id))
+
+
+# --- NEW MODEL ---
+# This is the new Association Object that holds extra data about the
+# relationship between a Profile and a Skill.
+class ProfileSkill(db.Model):
+    __tablename__ = 'profile_skill'
+    profile_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey('profile.id'), primary_key=True)
+    skill_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey('skill.id'), primary_key=True)
+
+    # New attributes to track skill progression
+    level: so.Mapped[int] = so.mapped_column(sa.Integer, default=1)
+    is_verified: so.Mapped[bool] = so.mapped_column(sa.Boolean, default=False)
+    proof_link: so.Mapped[Optional[str]] = so.mapped_column(sa.String(255))  # URL to project or path to certificate
+
+    # Relationships to the parent models
+    profile: so.Mapped['Profile'] = so.relationship(back_populates='skill_associations')
+    skill: so.Mapped['Skill'] = so.relationship(back_populates='profile_associations')
+
 
 class User(db.Model, UserMixin):
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
@@ -44,13 +63,16 @@ class User(db.Model, UserMixin):
         back_populates='applicant', cascade='all, delete-orphan')
     teams: so.Mapped[List['Post']] = so.relationship(
         secondary=post_teammates, back_populates='teammates')
+
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+
     def __repr__(self):
         return f'<User {self.username}>'
+
 
 class Profile(db.Model):
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
@@ -70,22 +92,41 @@ class Profile(db.Model):
 
     user: so.Mapped['User'] = so.relationship(back_populates='profile')
 
-    skills: so.Mapped[List['Skill']] = so.relationship(
-        secondary=profile_skills, back_populates='profiles')
+    # --- MODIFIED RELATIONSHIP ---
+    # The old `skills` relationship is replaced with `skill_associations`
+    skill_associations: so.Mapped[List['ProfileSkill']] = so.relationship(
+        back_populates='profile', cascade="all, delete-orphan")
+
+    # --- NEW HELPER ---
+    # A property to easily get a simple list of Skill objects,
+    # making the transition easier in your templates.
+    @property
+    def skills(self) -> List['Skill']:
+        return [assoc.skill for assoc in self.skill_associations]
 
     def __repr__(self):
         return f'<Profile for {self.user.username}>'
+
 
 class Skill(db.Model):
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
     name: so.Mapped[str] = so.mapped_column(sa.String(50), unique=True, index=True)
 
-    profiles: so.Mapped[List['Profile']] = so.relationship(
-        secondary=profile_skills, back_populates='skills')
+    # --- MODIFIED RELATIONSHIP ---
+    # The old `profiles` relationship is replaced. `profile_associations` now
+    # links to the new ProfileSkill model.
+    profile_associations: so.Mapped[List['ProfileSkill']] = so.relationship(
+        back_populates='skill', cascade="all, delete-orphan")
+
     required_by_posts: so.Mapped[List['Post']] = so.relationship(
         secondary=post_required_skills, back_populates='required_skills')
+
     def __repr__(self):
         return f'<Skill {self.name}>'
+
+
+# No changes needed for Post, Application, ChatMessage, or ChatReadStatus models.
+# They are included here for completeness.
 
 class Post(db.Model):
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
@@ -117,6 +158,7 @@ class Post(db.Model):
     def __repr__(self):
         return f'<Post {self.event_name}>'
 
+
 class Application(db.Model):
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
     post_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey('post.id'), index=True)
@@ -124,12 +166,14 @@ class Application(db.Model):
     status: so.Mapped[str] = so.mapped_column(sa.String(20), default='Pending')
     timestamp: so.Mapped[datetime] = so.mapped_column(
         index=True, default=lambda: datetime.now(timezone.utc))
+    notified: so.Mapped[bool] = so.mapped_column(sa.Boolean, default=False)
 
     post: so.Mapped['Post'] = so.relationship(back_populates='applications')
     applicant: so.Mapped['User'] = so.relationship(back_populates='applications')
 
     def __repr__(self):
         return f'<Application by {self.applicant.username} for {self.post.event_name}>'
+
 
 class ChatMessage(db.Model):
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
@@ -140,6 +184,7 @@ class ChatMessage(db.Model):
 
     post: so.Mapped['Post'] = so.relationship()
     sender: so.Mapped['User'] = so.relationship()
+
 
 class ChatReadStatus(db.Model):
     id: so.Mapped[int] = so.mapped_column(primary_key=True)

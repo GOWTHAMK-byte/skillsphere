@@ -1,37 +1,69 @@
 {% extends 'base.html' %}
+
 {% block content %}
-<div class="max-w-2xl mx-auto py-10">
-    <h2 class="text-3xl font-bold mb-8 text-violet-200">Messages</h2>
+<div class="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+    <!-- Header -->
+    <div class="text-center mb-12">
+        <h1 class="text-5xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-fuchsia-400">
+            Team Chats
+        </h1>
+        <p class="mt-4 text-lg text-violet-300/80">Your command center for all project communications.</p>
+    </div>
+
+    <!-- Message List -->
     {% if chat_data %}
-    <ul class="divide-y divide-violet-900/60">
+    <div class="space-y-6">
         {% for chat in chat_data %}
-        <li class="flex items-center gap-4 py-5 hover:bg-black/40 transition rounded-xl px-4">
-            <div class="flex-1 min-w-0">
-                <a href="{{ url_for('chat', post_id=chat.post.id) }}" class="block font-bold text-lg text-violet-100 hover:underline">
-                    {{ chat.post.event_name }}
-                </a>
-                <div class="text-xs text-violet-400 mt-1 truncate">
-                    {% if chat.latest_msg %}
-                        <span class="font-semibold">{{ chat.latest_msg.sender.username }}:</span>
-                        {{ chat.latest_msg.content[:60] }}{% if chat.latest_msg.content|length > 60 %}...{% endif %}
-                        <span class="ml-2 text-violet-600">{{ chat.latest_msg.timestamp.strftime('%b %d, %I:%M %p') }}</span>
+        <a href="{{ url_for('chat', post_id=chat.post.id) }}" class="block bg-black/30 backdrop-blur-md border border-violet-900/60 rounded-2xl shadow-lg p-5 transition-all duration-300 hover:border-violet-700/80 hover:shadow-violet-500/20 hover:-translate-y-1">
+            <div class="flex items-start gap-5">
+                <!-- Project Poster/Avatar -->
+                <div class="flex-shrink-0">
+                    {% if chat.post.event_poster_filename %}
+                        <img src="{{ url_for('static', filename='posters/' + chat.post.event_poster_filename) }}" alt="{{ chat.post.event_name }} Poster" class="w-16 h-16 rounded-lg object-cover border-2 border-violet-800/50 shadow-md">
                     {% else %}
-                        <span class="italic text-violet-700">No messages yet</span>
+                        <div class="w-16 h-16 bg-gradient-to-br from-violet-900 to-black rounded-lg flex items-center justify-center border-2 border-violet-800/50 shadow-md">
+                            <span class="text-2xl text-violet-300 font-bold">{{ chat.post.event_name[0]|upper }}</span>
+                        </div>
                     {% endif %}
                 </div>
+
+                <!-- Message Content -->
+                <div class="flex-1 min-w-0">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-lg font-bold text-violet-100 truncate">{{ chat.post.event_name }}</h2>
+                        {% if chat.unread_count > 0 %}
+                        <span class="ml-2 bg-fuchsia-600 text-white text-xs rounded-full px-2.5 py-1 font-bold animate-pulse">{{ chat.unread_count }}</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="text-sm text-violet-400 mt-1.5 truncate">
+                        {% if chat.latest_msg %}
+                            <span class="font-semibold text-violet-300">{{ chat.latest_msg.sender.username }}:</span>
+                            <span class="text-violet-400">{{ chat.latest_msg.content }}</span>
+                        {% else %}
+                            <span class="italic text-violet-500">No messages yet in this chat.</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Timestamp -->
+                {% if chat.latest_msg %}
+                <div class="text-xs text-violet-500 font-semibold text-right flex-shrink-0">
+                    {{ chat.latest_msg.timestamp.strftime('%b %d') }}<br>
+                    {{ chat.latest_msg.timestamp.strftime('%I:%M %p') }}
+                </div>
+                {% endif %}
             </div>
-            {% if chat.unread_count > 0 %}
-            <span class="ml-2 bg-fuchsia-600 text-white text-xs rounded-full px-3 py-1 font-bold">{{ chat.unread_count }}</span>
-            {% endif %}
-            <a href="{{ url_for('chat', post_id=chat.post.id) }}" class="ml-4 bg-violet-800 hover:bg-violet-900 text-white px-4 py-2 rounded-lg text-xs font-semibold border border-violet-900">Open Chat</a>
-        </li>
+        </a>
         {% endfor %}
     </ul>
     {% else %}
-    <div class="bg-black/70 border border-violet-900 rounded-xl p-8 text-center">
-        <p class="text-violet-400">You have no team chats yet.</p>
+    <!-- Empty State -->
+    <div class="bg-black/20 border-2 border-dashed border-violet-900/60 rounded-xl p-12 text-center mt-8">
+        <svg class="mx-auto h-12 w-12 text-violet-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+        <h3 class="mt-4 text-lg font-semibold text-white">No Team Chats Yet</h3>
+        <p class="mt-1 text-sm text-violet-300">When you join or create a team, your private chat room will appear here.</p>
     </div>
     {% endif %}
 </div>
 {% endblock %}
-

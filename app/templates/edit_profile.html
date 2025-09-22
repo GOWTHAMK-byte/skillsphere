@@ -9,6 +9,7 @@
         {{ form.hidden_tag() }}
 
         <div class="space-y-8">
+            <!-- Profile Picture Section -->
             <div>
                 <label class="block text-violet-200 text-sm font-semibold mb-2">Profile Picture</label>
                 <div class="mt-2 flex items-center space-x-6">
@@ -30,74 +31,65 @@
                 </div>
             </div>
 
+            <!-- Standard Form Fields -->
             <div>
                 {{ form.name.label(class="block text-violet-200 text-sm font-semibold mb-2") }}
-                {{ form.name(class="w-full px-3 py-2 bg-black/60 border border-violet-800 rounded-lg text-violet-100 focus:outline-none focus:ring-2 focus:ring-violet-600 placeholder-violet-400", placeholder="Your full name") }}
-                {% for error in form.name.errors %}
-                <span class="text-red-400 text-xs mt-1">{{ error }}</span>
-                {% endfor %}
+                {{ form.name(class="w-full px-3 py-2 bg-black/60 border border-violet-800 rounded-lg text-violet-100 focus:outline-none focus:ring-2 focus:ring-violet-600 placeholder-violet-400", placeholder="Your full name", value=current_user.profile.name or '') }}
             </div>
-
             <div>
                 {{ form.bio.label(class="block text-violet-200 text-sm font-semibold mb-2") }}
                 {{ form.bio(class="w-full px-3 py-2 bg-black/60 border border-violet-800 rounded-lg text-violet-100 focus:outline-none focus:ring-2 focus:ring-violet-600 placeholder-violet-400", rows=4, placeholder="Tell us a little about yourself...") }}
-                {% for error in form.bio.errors %}
-                <span class="text-red-400 text-xs mt-1">{{ error }}</span>
-                {% endfor %}
             </div>
-
             <div>
                 {{ form.skills.label(class="block text-violet-200 text-sm font-semibold mb-2") }}
                 {{ form.skills(class="w-full px-3 py-2 bg-black/60 border border-violet-800 rounded-lg text-violet-100 focus:outline-none focus:ring-2 focus:ring-violet-600 placeholder-violet-400", placeholder="Add skills...", value=current_user.profile.skills|map(attribute='name')|join(',')) }}
-                {% for error in form.skills.errors %}
-                <span class="text-red-400 text-xs mt-1">{{ error }}</span>
-                {% endfor %}
             </div>
-
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div>
                     {{ form.college.label(class="block text-violet-200 text-sm font-semibold mb-2") }}
-                    {{ form.college(class="w-full px-3 py-2 bg-black/60 border border-violet-800 rounded-lg text-violet-100 focus:outline-none focus:ring-2 focus:ring-violet-600 placeholder-violet-400", placeholder="e.g., University of Technology") }}
+                    {{ form.college(class="w-full px-3 py-2 bg-black/60 border border-violet-800 rounded-lg text-violet-100 focus:outline-none focus:ring-2 focus:ring-violet-600 placeholder-violet-400", placeholder="e.g., University of Technology", value=current_user.profile.college or '') }}
                 </div>
                 <div>
                     {{ form.degree.label(class="block text-violet-200 text-sm font-semibold mb-2") }}
-                    {{ form.degree(class="w-full px-3 py-2 bg-black/60 border border-violet-800 rounded-lg text-violet-100 focus:outline-none focus:ring-2 focus:ring-violet-600 placeholder-violet-400", placeholder="e.g., B.S. in Computer Science") }}
+                    {{ form.degree(class="w-full px-3 py-2 bg-black/60 border border-violet-800 rounded-lg text-violet-100 focus:outline-none focus:ring-2 focus:ring-violet-600 placeholder-violet-400", placeholder="e.g., B.S. in Computer Science", value=current_user.profile.degree or '') }}
                 </div>
             </div>
-
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div>
                     {{ form.year.label(class="block text-violet-200 text-sm font-semibold mb-2") }}
-                    {{ form.year(class="w-full px-3 py-2 bg-black/60 border border-violet-800 rounded-lg text-violet-100 focus:outline-none focus:ring-2 focus:ring-violet-600 placeholder-violet-400", placeholder="e.g., Final Year") }}
+                    {{ form.year(class="w-full px-3 py-2 bg-black/60 border border-violet-800 rounded-lg text-violet-100 focus:outline-none focus:ring-2 focus:ring-violet-600 placeholder-violet-400", placeholder="e.g., Final Year", value=current_user.profile.year or '') }}
                 </div>
                 <div>
                     {{ form.location.label(class="block text-violet-200 text-sm font-semibold mb-2") }}
-                    {{ form.location(class="w-full px-3 py-2 bg-black/60 border border-violet-800 rounded-lg text-violet-100 focus:outline-none focus:ring-2 focus:ring-violet-600 placeholder-violet-400", placeholder="e.g., New Delhi, India") }}
+                    {{ form.location(class="w-full px-3 py-2 bg-black/60 border border-violet-800 rounded-lg text-violet-100 focus:outline-none focus:ring-2 focus:ring-violet-600 placeholder-violet-400", placeholder="e.g., New Delhi, India", value=current_user.profile.location or '') }}
                 </div>
             </div>
-
             <div>
                 {{ form.github_url.label(class="block text-violet-200 text-sm font-semibold mb-2") }}
-                {{ form.github_url(class="w-full px-3 py-2 bg-black/60 border border-violet-800 rounded-lg text-violet-100 focus:outline-none focus:ring-2 focus:ring-violet-600 placeholder-violet-400", placeholder="https://github.com/username") }}
-                {% for error in form.github_url.errors %}
-                <span class="text-red-400 text-xs mt-1">{{ error }}</span>
-                {% endfor %}
+                {{ form.github_url(class="w-full px-3 py-2 bg-black/60 border border-violet-800 rounded-lg text-violet-100 focus:outline-none focus:ring-2 focus:ring-violet-600 placeholder-violet-400", placeholder="https://github.com/username", value=current_user.profile.github_url or '') }}
             </div>
             <div>
                 {{ form.linkedin_url.label(class="block text-violet-200 text-sm font-semibold mb-2") }}
-                {{ form.linkedin_url(class="w-full px-3 py-2 bg-black/60 border border-violet-800 rounded-lg text-violet-100 focus:outline-none focus:ring-2 focus:ring-violet-600 placeholder-violet-400", placeholder="https://linkedin.com/in/username") }}
-                {% for error in form.linkedin_url.errors %}
-                <span class="text-red-400 text-xs mt-1">{{ error }}</span>
-                {% endfor %}
+                {{ form.linkedin_url(class="w-full px-3 py-2 bg-black/60 border border-violet-800 rounded-lg text-violet-100 focus:outline-none focus:ring-2 focus:ring-violet-600 placeholder-violet-400", placeholder="https://linkedin.com/in/username", value=current_user.profile.linkedin_url or '') }}
             </div>
-
             <div>
                 {{ form.gender.label(class="block text-violet-200 text-sm font-semibold mb-2") }}
                 {{ form.gender(class="w-full px-3 py-2 bg-black/60 border border-violet-800 rounded-lg text-violet-100 focus:outline-none focus:ring-2 focus:ring-violet-600") }}
-                {% for error in form.gender.errors %}
-                <span class="text-red-400 text-xs mt-1">{{ error }}</span>
-                {% endfor %}
             </div>
+
+            <!-- --- NEW: AI Skill Detection Section --- -->
+            <div class="border-t-2 border-violet-900/50 pt-8 space-y-4">
+                <h3 class="text-lg font-semibold text-violet-200 tracking-wide">✨ AI Skill Detection</h3>
+                <p class="text-sm text-violet-300">Upload a certificate or resume (.pdf, .png, .jpg) to automatically add skills.</p>
+                <div class="flex flex-col sm:flex-row items-center sm:space-x-4 space-y-4 sm:space-y-0">
+                    <input type="file" id="skill-doc-uploader" class="block w-full text-sm text-violet-200 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-900/60 file:text-violet-200 hover:file:bg-violet-800/80 focus:outline-none">
+                    <button type="button" id="detect-skills-btn" class="w-full sm:w-auto flex-shrink-0 bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white font-bold py-2 px-6 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-all duration-200">
+                        Detect Skills
+                    </button>
+                </div>
+                <div id="skill-detector-status" class="mt-2 text-sm h-5"></div>
+            </div>
+            <!-- --- END NEW SECTION --- -->
 
             <div class="pt-4">
                 {{ form.submit(class="w-full bg-gradient-to-r from-violet-700 to-violet-900 hover:from-violet-800 hover:to-black text-white font-bold py-2 px-4 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-violet-600 focus:ring-offset-2 transition-all duration-200") }}
@@ -105,6 +97,11 @@
         </div>
     </form>
 </div>
+
+<!-- Add Tagify CSS -->
+<link href="https://unpkg.com/@yaireo/tagify/dist/tagify.css" rel="stylesheet" type="text/css" />
+<script src="https://unpkg.com/@yaireo/tagify"></script>
+<script src="https://unpkg.com/@yaireo/tagify/dist/tagify.polyfills.min.js"></script>
 
 <script>
     // The DOM element you wish to replace with Tagify
@@ -114,10 +111,10 @@
     var tagify = new Tagify(input, {
         whitelist: [], // Start with an empty whitelist
         dropdown: {
-            maxItems: 20,           // Show max 20 suggestions
+            maxItems: 20,
             classname: "tags-look", // Custom class for dropdown
-            enabled: 1,             // Show suggestions on first character input
-            closeOnSelect: false    // Keep dropdown open after selection
+            enabled: 1,
+            closeOnSelect: false
         }
     });
 
@@ -126,22 +123,58 @@
 
     function onInput( e ){
         var value = e.detail.value;
-        tagify.whitelist = null; // Reset whitelist
+        tagify.whitelist = null;
 
-        // Abort previous request
         const controller = new AbortController();
         const signal = controller.signal;
 
-        // Show loading animation and hide invalid tag message
         tagify.loading(true).dropdown.hide();
 
-        // Fetch suggestions from our API endpoint
         fetch(`/api/skills/search?q=${value}`, {signal})
             .then(RES => RES.json())
             .then(function(newWhitelist){
-                tagify.whitelist = newWhitelist; // Update whitelist
-                tagify.loading(false).dropdown.show(value); // Show dropdown
+                tagify.whitelist = newWhitelist;
+                tagify.loading(false).dropdown.show(value);
             })
     }
+
+    // --- NEW: JavaScript for Skill Detection API Call ---
+    document.getElementById('detect-skills-btn').addEventListener('click', async () => {
+        const uploader = document.getElementById('skill-doc-uploader');
+        const statusDiv = document.getElementById('skill-detector-status');
+
+        if (uploader.files.length === 0) {
+            statusDiv.innerHTML = '<span class="text-yellow-400">Please select a file first.</span>';
+            return;
+        }
+
+        statusDiv.innerHTML = '<span class="text-cyan-400 animate-pulse">🔍 Analyzing document... please wait.</span>';
+
+        const formData = new FormData();
+        formData.append('file', uploader.files[0]);
+
+        try {
+            const response = await fetch('/api/detect-skills', {
+                method: 'POST',
+                body: formData
+            });
+            const result = await response.json();
+
+            if (result.success) {
+                if (result.skills.length > 0) {
+                    statusDiv.innerHTML = `<span class="text-green-400">✅ Detected ${result.skills.length} skills! Added to your profile.</span>`;
+                    tagify.addTags(result.skills); // Add detected skills to the input
+                } else {
+                    statusDiv.innerHTML = '<span class="text-yellow-400">ℹ️ Analysis complete. No new skills were found in the document.</span>';
+                }
+            } else {
+                statusDiv.innerHTML = `<span class="text-red-400">Error: ${result.error}</span>`;
+            }
+        } catch (error) {
+            statusDiv.innerHTML = '<span class="text-red-400">A network or server error occurred. Please try again.</span>';
+            console.error('Skill detection error:', error);
+        }
+    });
 </script>
 {% endblock %}
+

@@ -3,182 +3,181 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>{% if title %}{{ title }} - SkillSphere{% else %}SkillSphere{% endif %}</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
     <link href="https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.css" rel="stylesheet" type="text/css" />
-    <link rel="icon" type="image/svg+xml" href="https://api.iconify.design/mdi:account-group.svg?color=%237c3aed" />
-    <!-- Google Fonts: Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
-    {% if title %}
-    <title>{{ title }} - SkillSphere</title>
-    {% else %}
-    <title>SkillSphere</title>
-    {% endif %}
-    <meta name="theme-color" content="#3b197a">
+
+    <link rel="icon" type="image/svg+xml" href="https://api.iconify.design/mdi:account-group.svg?color=%237c3aed" />
+    <meta name="theme-color" content="#1e1b4b">
     <meta name="description" content="SkillSphere: Find your perfect hackathon or project team. Accessible, beautiful, and fast.">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
     <style>
         html { scroll-behavior: smooth; }
-        body { font-family: 'Inter', sans-serif; }
-        ::-webkit-scrollbar { width: 10px; background: #e0e7ef; }
-        ::-webkit-scrollbar-thumb { background: linear-gradient(135deg, #38bdf8 0%, #6366f1 100%); border-radius: 8px; }
-        @media (max-width: 640px) {
-            .hide-on-mobile { display: none !important; }
-        }
-        @media (min-width: 641px) {
-            .show-on-mobile { display: none !important; }
-        }
-        .focus-ring:focus {
+        body { font-family: 'Inter', sans-serif; background-color: #0c0a18; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1e1b4b; }
+        ::-webkit-scrollbar-thumb { background: #4c1d95; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #5b21b6; }
+
+        .focus-ring:focus-visible {
             outline: 2px solid #a78bfa;
             outline-offset: 2px;
+            border-radius: 0.25rem;
         }
-        /* Animated gradient background */
-        .animated-bg {
-            background: linear-gradient(120deg, #1a1333, #3b197a, #a78bfa, #f472b6, #1a1333);
-            background-size: 300% 300%;
-            animation: gradientMove 18s ease-in-out infinite;
+
+        .nav-link {
+            position: relative;
+            transition: color 0.3s ease;
         }
-        @keyframes gradientMove {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -4px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #a78bfa;
+            transition: width 0.3s ease;
         }
-        /* Fade-in animation for main content */
+        .nav-link:hover::after {
+            width: 100%;
+        }
+
         .fade-in {
             opacity: 0;
-            animation: fadeIn 1.2s ease 0.2s forwards;
+            animation: fadeIn 0.8s ease 0.1s forwards;
         }
         @keyframes fadeIn {
             to { opacity: 1; }
         }
+
+        /* Custom Tagify styles for dark mode */
+        :root {
+            --tagify-bg-color: rgba(0, 0, 0, 0.4);
+            --tagify-text-color: #ddd6fe;
+            --tagify-dd-bg-color: #1e1b4b;
+            --tagify-dd-text-color: #c4b5fd;
+            --tagify-dd-item-hover-bg-color: #4c1d95;
+        }
+        .tagify{
+            --tags-border-color: #4c1d95;
+        }
+        .tagify__tag {
+            background-color: #5b21b6;
+        }
+        .tagify__tag > div::before {
+            background: linear-gradient(45deg, rgba(255,255,255,0.3), transparent);
+        }
     </style>
 </head>
-<body class="bg-gradient-to-br from-black via-[#1a1333] to-[#3b197a] min-h-screen font-sans antialiased overflow-x-hidden text-neutral-100 animated-bg">
-    <script src="https://cdn.jsdelivr.net/npm/@yaireo/tagify"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.polyfills.min.js"></script>
-    <header class="w-full bg-black/80 shadow-sm sticky top-0 z-50 border-b border-violet-900/60 backdrop-blur">
-        <div class="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex justify-between items-center">
-            <h1 class="text-2xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-violet-400 via-fuchsia-400 to-blue-400 drop-shadow-lg">
-                <a href="{{ url_for('index') }}" class="hover:text-fuchsia-400 transition focus-ring" aria-label="SkillSphere Home">SkillSphere</a>
-            </h1>
-<<<<<<< HEAD
-            <nav class="space-x-2 sm:space-x-4 flex items-center text-base">
-                <a href="{{ url_for('index') }}" class="text-neutral-200 hover:text-fuchsia-400 font-medium transition focus-ring" aria-label="Home">Home</a>
-                <a href="{{ url_for('dashboard') }}" class="text-neutral-200 hover:text-fuchsia-400 font-medium transition focus-ring" aria-label="Dashboard">Dashboard</a>
-=======
-            <nav class="space-x-4 flex items-center">
-                <a href="{{ url_for('index') }}" class="text-neutral-200 hover:text-fuchsia-400 font-medium transition">Home</a>
-                <a href="{{ url_for('dashboard') }}" class="text-neutral-200 hover:text-fuchsia-400 font-medium transition">Dashboard</a>
-                {% if not current_user.is_anonymous %}
-                <a href="{{ url_for('messages') }}" id="messages-tab" class="text-neutral-200 hover:text-fuchsia-400 font-medium transition relative flex items-center justify-center ml-4" title="Messages" style="order:99;">
-                    <!-- Instagram-style paper plane icon -->
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10l18-6-6 18-2.5-7.5L3 10z" /></svg>
-                    <span id="messages-badge" class="hidden absolute -top-2 -right-3 bg-fuchsia-600 text-white text-xs rounded-full px-2 py-0.5 font-bold"></span>
+<body class="min-h-screen font-sans antialiased overflow-x-hidden text-neutral-200">
+    <div id="tsparticles" style="position:fixed; z-index:-1; top:0; left:0; width:100%; height:100%;"></div>
+
+    <header class="w-full bg-black/50 shadow-lg sticky top-0 z-50 border-b border-violet-900/60 backdrop-blur-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex justify-between items-center">
+            <a href="{{ url_for('index') }}" class="focus-ring" aria-label="SkillSphere Home">
+                <h1 class="text-2xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-fuchsia-400 drop-shadow-[0_2px_4px_rgba(167,139,250,0.3)]">
+                    SkillSphere
+                </h1>
+            </a>
+
+            <nav class="space-x-4 sm:space-x-6 flex items-center text-base">
+                <a href="{{ url_for('index') }}" class="text-neutral-300 hover:text-white font-medium nav-link focus-ring" aria-label="Home">Home</a>
+                <a href="{{ url_for('dashboard') }}" class="text-neutral-300 hover:text-white font-medium nav-link focus-ring relative" aria-label="Dashboard">
+                    Dashboard
+                    {% if notifications_count > 0 %}
+                        <span id="dashboard-notification-badge" class="absolute -top-1.5 -right-3.5 bg-yellow-400 text-black text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold animate-pulse">{{ notifications_count }}</span>
+                    {% endif %}
+                </a>
+
+                {% if current_user.is_authenticated %}
+                <!-- --- MODIFICATION: Bigger icon and improved accessibility --- -->
+                <a href="{{ url_for('messages') }}" class="text-neutral-300 hover:text-white font-medium transition relative p-2 rounded-full hover:bg-violet-900/50 focus-ring" title="Messages" aria-label="View Messages">
+                    <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                    <span id="messages-badge" class="hidden absolute top-0 right-0 bg-fuchsia-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold"></span>
                 </a>
                 {% endif %}
->>>>>>> cd82beecccea823157f2d16e6cbdb70a12b2b148
+
                 {% if current_user.is_anonymous %}
-                <a href="{{ url_for('register') }}" class="text-neutral-200 hover:text-fuchsia-400 font-medium transition focus-ring" aria-label="Register">Register</a>
-                <a href="{{ url_for('login') }}" class="bg-gradient-to-r from-violet-700 to-fuchsia-700 hover:from-violet-800 hover:to-fuchsia-800 text-white font-medium px-4 py-1.5 rounded-md shadow-sm transition focus-ring" aria-label="Login">Login</a>
+                <a href="{{ url_for('register') }}" class="text-neutral-300 hover:text-white font-medium nav-link focus-ring" aria-label="Register">Register</a>
+                <a href="{{ url_for('login') }}" class="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white font-semibold px-4 py-2 rounded-lg shadow-lg transition-all duration-300 transform hover:scale-105 focus-ring" aria-label="Login">Login</a>
                 {% else %}
-                <a href="{{ url_for('user', username=current_user.username) }}" class="text-neutral-200 hover:text-fuchsia-400 font-medium transition focus-ring" aria-label="Profile">Profile</a>
-                <a href="{{ url_for('logout') }}" class="text-neutral-200 hover:text-fuchsia-400 font-medium transition focus-ring" aria-label="Logout">Logout</a>
+                <a href="{{ url_for('user', username=current_user.username) }}" class="text-neutral-300 hover:text-white font-medium nav-link focus-ring" aria-label="View Profile">Profile</a>
+                <a href="{{ url_for('logout') }}" class="text-neutral-300 hover:text-white font-medium nav-link focus-ring" aria-label="Logout">Logout</a>
                 {% endif %}
             </nav>
         </div>
     </header>
-    <main class="w-full px-0 fade-in">
-        <div class="max-w-6xl mx-auto">
+
+    <main class="w-full px-4 sm:px-6 fade-in relative z-10">
+        <div class="max-w-7xl mx-auto py-8">
             {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
-                <div class="mb-6 px-6">
+                <div class="mb-6">
                 {% for category, message in messages %}
-                    {% set color = 'violet' if category == 'message' else 'green' if category == 'success' else 'red' if category == 'danger' else 'yellow' %}
-                    <div class="bg-gradient-to-r from-{{ color }}-900/30 to-black/30 border-l-4 border-{{ color }}-600 text-{{ color }}-200 p-3 rounded-md shadow-md mb-2 flex items-center gap-2" role="alert" aria-live="polite">
-                        <svg class="h-5 w-5 text-{{ color }}-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M12 20a8 8 0 100-16 8 8 0 000 16z" /></svg>
+                    {% set colors = {
+                        'message': 'blue',
+                        'success': 'green',
+                        'danger': 'red',
+                        'warning': 'yellow'
+                    } %}
+                    {% set color = colors.get(category, 'gray') %}
+                    <div class="bg-{{ color }}-900/20 border border-{{ color }}-500/30 text-{{ color }}-200 px-4 py-3 rounded-lg relative shadow-lg mb-3 flex items-start gap-3" role="alert">
+                        <svg class="h-6 w-6 text-{{ color }}-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                           {% if category == 'success' %} <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                           {% elif category == 'danger' %} <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                           {% else %} <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                           {% endif %}
+                        </svg>
                         <p>{{ message }}</p>
                     </div>
                 {% endfor %}
                 </div>
             {% endif %}
             {% endwith %}
+
             {% block content %}{% endblock %}
         </div>
     </main>
-    {% if current_user.is_authenticated %}
-    <a href="{{ url_for('messages') }}" id="chat-fab" class="fixed top-6 right-8 z-50 bg-fuchsia-700 hover:bg-fuchsia-800 text-white rounded-full shadow-lg p-3 flex items-center justify-center text-xl font-bold transition-all border-2 border-fuchsia-900/40 focus-ring" title="Open Chat" aria-label="Open Chat" style="box-shadow: 0 2px 16px 0 rgba(180,20,120,0.15);">
-        <svg class="h-7 w-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.77 9.77 0 01-4-.8L3 20l.8-4A8.96 8.96 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
-        </svg>
-        <span id="chat-fab-badge" class="hidden absolute -top-2 -right-2 bg-fuchsia-600 text-white text-xs rounded-full px-2 py-0.5 font-bold"></span>
-    </a>
-<<<<<<< HEAD
-    <script>
-    // Real-time unread badge logic for chat icon (all pages)
-=======
-            <a href="{{ url_for('messages') }}" class="text-fuchsia-400 hover:underline text-sm font-semibold">View All</a>
-        </div>
-    </div>
-    {% endif %}
-    {% block scripts %}
+
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tsparticles-slim@2.12.0/tsparticles.slim.bundle.min.js"></script>
+
     <script>
     {% if current_user.is_authenticated %}
-    // Floating messages panel logic
-    const openMessagesBtn = document.getElementById('open-messages-panel');
-    const closeMessagesBtn = document.getElementById('close-messages-panel');
-    const messagesPanel = document.getElementById('messages-panel');
-    const messagesPanelContent = document.getElementById('messages-panel-content');
-    if (openMessagesBtn && closeMessagesBtn && messagesPanel && messagesPanelContent) {
-        openMessagesBtn.addEventListener('click', function() {
-            messagesPanel.classList.remove('hidden');
-            // Fetch messages summary via AJAX (expects ?json=1 to return chat_data as JSON)
-            fetch("{{ url_for('messages') }}?json=1").then(r => r.json()).then(data => {
-                if (data.chat_data && data.chat_data.length > 0) {
-                    messagesPanelContent.innerHTML = data.chat_data.map(chat => `
-                        <div class='flex items-center gap-4 py-4 px-6 hover:bg-black/40 transition rounded-xl'>
-                            <div class='flex-1 min-w-0'>
-                                <a href='${chat.url}' class='block font-bold text-base text-fuchsia-100 hover:underline'>${chat.event_name}</a>
-                                <div class='text-xs text-fuchsia-400 mt-1 truncate'>
-                                    ${chat.latest_msg ? `<span class='font-semibold'>${chat.latest_msg.sender}:</span> ${chat.latest_msg.content.substring(0, 40)}${chat.latest_msg.content.length > 40 ? '...' : ''} <span class='ml-2 text-fuchsia-600'>${chat.latest_msg.timestamp}</span>` : `<span class='italic text-fuchsia-700'>No messages yet</span>`}
-                                </div>
-                            </div>
-                            ${chat.unread_count > 0 ? `<span class='ml-2 bg-fuchsia-600 text-white text-xs rounded-full px-3 py-1 font-bold'>${chat.unread_count}</span>` : ''}
-                            <a href='${chat.url}' class='ml-4 bg-violet-800 hover:bg-violet-900 text-white px-4 py-2 rounded-lg text-xs font-semibold border border-violet-900'>Open Chat</a>
-                        </div>
-                    `).join('');
-                } else {
-                    messagesPanelContent.innerHTML = `<div class='bg-black/70 border border-violet-900 rounded-xl p-8 text-center'><p class='text-violet-400'>You have no team chats yet.</p></div>`;
-                }
-            });
-        });
-        closeMessagesBtn.addEventListener('click', function() {
-            messagesPanel.classList.add('hidden');
-        });
-    }
-    // Real-time unread badge logic
->>>>>>> cd82beecccea823157f2d16e6cbdb70a12b2b148
     const userId = {{ current_user.id }};
-    let currentChatPostId = null;
-    const chatMatch = window.location.pathname.match(/\/chat\/(\d+)/);
-    if (chatMatch) currentChatPostId = parseInt(chatMatch[1]);
-    function updateChatFabBadge(count) {
-        const badge = document.getElementById('chat-fab-badge');
+    function updateMessagesBadge(count) {
+        const badge = document.getElementById('messages-badge');
+        const dashboardBadge = document.getElementById('dashboard-notification-badge');
         if (badge) {
             if (count > 0) {
-                badge.textContent = count > 99 ? '99+' : count;
+                const displayCount = count > 99 ? '99+' : count;
+                badge.textContent = displayCount;
                 badge.classList.remove('hidden');
+                if(dashboardBadge) dashboardBadge.textContent = displayCount;
             } else {
                 badge.classList.add('hidden');
+                 if(dashboardBadge) dashboardBadge.style.display = 'none'; // Keep layout stable
             }
         }
     }
+
     function fetchAndUpdateChatBadge() {
         fetch("{{ url_for('messages') }}?json=1").then(r => r.json()).then(data => {
             const unreadCounts = data.unread_counts || {};
             let totalUnread = 0;
             Object.values(unreadCounts).forEach(count => { totalUnread += count; });
-            updateChatFabBadge(totalUnread);
+            updateMessagesBadge(totalUnread);
         });
     }
+
     function setupChatBadgeSocket() {
         fetch("{{ url_for('messages') }}?json=1").then(r => r.json()).then(data => {
             const chatRooms = data.rooms || [];
@@ -186,7 +185,9 @@
             chatRooms.forEach(postId => {
                 socket.emit('join', { post_id: postId });
             });
+
             fetchAndUpdateChatBadge();
+
             socket.on('receive_message', function(msg) {
                 if (msg.sender_id !== userId) {
                     fetchAndUpdateChatBadge();
@@ -200,33 +201,36 @@
         });
     }
     setupChatBadgeSocket();
-    // Reset badge if user is on a chat page (instant feedback)
-    if (currentChatPostId !== null) {
-        fetchAndUpdateChatBadge();
-    }
-    </script>
     {% endif %}
-    {% block scripts %}{% endblock %}
-    <!-- tsParticles for floating particles background -->
-    <script src="https://cdn.jsdelivr.net/npm/tsparticles@3.3.0/tsparticles.bundle.min.js"></script>
-    <div id="tsparticles" style="position:fixed;z-index:0;top:0;left:0;width:100vw;height:100vh;pointer-events:none;"></div>
-    <script>
+
     window.addEventListener('DOMContentLoaded', () => {
-      tsParticles.load('tsparticles', {
-        fullScreen: { enable: false },
-        background: { color: 'transparent' },
+      tsParticles.load("tsparticles", {
+        fpsLimit: 60,
         particles: {
-          number: { value: 28 },
-          color: { value: ['#a78bfa', '#f472b6', '#38bdf8', '#6366f1'] },
-          shape: { type: 'circle' },
-          opacity: { value: 0.18 },
-          size: { value: { min: 2, max: 6 } },
-          move: { enable: true, speed: 0.6, direction: 'none', random: true, straight: false, outModes: 'out' },
-          links: { enable: true, distance: 120, color: '#a78bfa', opacity: 0.08, width: 1 }
+          number: { value: 80, density: { enable: true, value_area: 800 } },
+          color: { value: "#a78bfa" },
+          shape: { type: "circle" },
+          opacity: { value: 0.5, random: true, anim: { enable: true, speed: 0.5, opacity_min: 0.1, sync: false } },
+          size: { value: { min: 1, max: 3 }, random: true, anim: { enable: false } },
+          links: { color: "#5b21b6", distance: 150, enable: true, opacity: 0.3, width: 1 },
+          move: { enable: true, speed: 1, direction: "none", random: true, straight: false, out_mode: "out", bounce: false },
         },
-        detectRetina: true
+        interactivity: {
+          detect_on: "canvas",
+          events: {
+            onhover: { enable: true, mode: "grab" },
+            resize: true,
+          },
+          modes: {
+            grab: { distance: 140, line_opacity: 0.5 },
+          },
+        },
+        retina_detect: true,
       });
     });
     </script>
+
+    {% block scripts %}{% endblock %}
 </body>
 </html>
+
