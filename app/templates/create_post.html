@@ -49,10 +49,10 @@
                 <div>
                     {{ form.event_datetime.label(class="block text-violet-200 text-lg font-semibold mb-2") }}
                     <div class="relative flex items-center group">
-                        {{ form.event_datetime(type="date", class="w-full px-4 py-3 pr-12 border border-violet-800 bg-black/40 text-violet-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-600 text-base cursor-pointer appearance-none", id="event_date_input", aria_label="Event Date", placeholder="Select event date") }}
-                        <button type="button" id="calendar-btn" aria-label="Open calendar" class="absolute right-4 top-1/2 -translate-y-1/2 text-violet-400 hover:text-violet-200 focus:outline-none cursor-pointer bg-transparent border-0 p-0 m-0" tabindex="0" style="z-index:2;">
+                        {{ form.event_datetime(type="text", class="w-full px-4 py-3 pr-12 border border-violet-800 bg-black/40 text-violet-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-600 text-base cursor-pointer appearance-none", id="event_date_input", aria_label="Event Date", placeholder="Select event date", autocomplete="off") }}
+                        <label for="event_date_input" class="absolute right-4 top-1/2 -translate-y-1/2 text-violet-400 hover:text-violet-200 focus:outline-none cursor-pointer bg-transparent border-0 p-0 m-0" tabindex="0" style="z-index:2;">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                        </button>
+                        </label>
                     </div>
                 </div>
                 <div>
@@ -80,12 +80,44 @@
 {% endblock %}
 
 {% block scripts %}
+<!-- Flatpickr CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<!-- Tagify CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.css">
+<!-- Flatpickr JS -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<!-- Tagify JS -->
+<script src="https://cdn.jsdelivr.net/npm/@yaireo/tagify"></script>
+<!-- Flatpickr custom init -->
+<script src="{{ url_for('static', filename='js/flatpickr-init.js') }}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // --- Skills autocomplete script (unchanged) ---
+    // --- Skills autocomplete with Tagify ---
     var skillsInput = document.querySelector('input[name=required_skills]');
-    if (skillsInput) {
-        // Tagify script...
+    if (skillsInput && window.Tagify) {
+        var tagify = new Tagify(skillsInput, {
+            enforceWhitelist: false,
+            whitelist: [], // Will be loaded dynamically
+            dropdown: {
+                enabled: 1, // show suggestions after 1 char
+                maxItems: 10,
+                classname: 'skills-suggestions',
+                fuzzySearch: true,
+                highlightFirst: true
+            }
+        });
+
+        tagify.on('input', function(e) {
+            var value = e.detail.value;
+            if (value.length > 0) {
+                fetch('/api/skills/search?q=' + encodeURIComponent(value))
+                    .then(r => r.json())
+                    .then(function(suggestions) {
+                        tagify.settings.whitelist = suggestions;
+                        tagify.dropdown.show.call(tagify, value);
+                    });
+            }
+        });
     }
 
     // --- REVISED: Gender ratio slider script ---
@@ -140,10 +172,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // Run once on page load to handle cases where the form is pre-filled
         handleTeamSizeChange();
     }
-
-    // --- Calendar icon click script (unchanged) ---
-    const calendarBtn = document.getElementById('calendar-btn');
-    // ...
 });
 </script>
 {% endblock %}
