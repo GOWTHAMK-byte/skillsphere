@@ -83,6 +83,8 @@ class CreatePostForm(FlaskForm):
     required_skills = StringField('Skills Required')
     event_datetime = DateField('Event Date', format='%Y-%m-%d', validators=[Optional()])
     event_venue = StringField('Event Venue (or "Online")', validators=[Optional()])
+    # --- NEW FIELD ---
+    location = StringField('Location (City/Region for Recommendations)', validators=[Optional(), Length(max=150)])
     submit = SubmitField('Create Post')
     male_slots = IntegerField('Number of Males', default=0)
     female_slots = IntegerField('Number of Females', default=0)
@@ -103,4 +105,3 @@ class VerifySkillForm(FlaskForm):
     event_id = SelectField('Select Completed Event', coerce=int, validators=[Optional()])
 
     submit = SubmitField('Submit Proof for Review')
-

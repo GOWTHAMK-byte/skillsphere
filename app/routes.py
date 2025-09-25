@@ -1158,5 +1158,3 @@ def delete_post(post_id):
     db.session.commit()
     flash('Post deleted successfully.', 'success')
     return redirect(url_for('user', username=current_user.username))
-
-
