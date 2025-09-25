@@ -5,7 +5,7 @@ from app import db, login
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timezone
-
+from flask import url_for
 # --- REMOVED ---
 # The old profile_skills helper table is no longer needed.
 # profile_skills = db.Table(...)
@@ -92,6 +92,9 @@ class Profile(db.Model):
 
     user: so.Mapped['User'] = so.relationship(back_populates='profile')
 
+    location: so.Mapped[Optional[str]] = so.mapped_column(sa.String(150))
+    latitude: so.Mapped[Optional[float]] = so.mapped_column(sa.Float)
+    longitude: so.Mapped[Optional[float]] = so.mapped_column(sa.Float)
     # --- MODIFIED RELATIONSHIP ---
     # The old `skills` relationship is replaced with `skill_associations`
     skill_associations: so.Mapped[List['ProfileSkill']] = so.relationship(
@@ -100,6 +103,14 @@ class Profile(db.Model):
     # --- NEW HELPER ---
     # A property to easily get a simple list of Skill objects,
     # making the transition easier in your templates.
+    @property
+    def avatar_url(self):
+        if self.avatar_filename:
+            return url_for('static', filename=f'avatars/{self.avatar_filename}')
+        else:
+            # Assumes you have a 'default.png' in your 'static/avatars' folder
+            return url_for('static', filename='avatars/default.png')
+
     @property
     def skills(self) -> List['Skill']:
         return [assoc.skill for assoc in self.skill_associations]
@@ -142,7 +153,9 @@ class Post(db.Model):
     timestamp: so.Mapped[datetime] = so.mapped_column(
         index=True, default=lambda: datetime.now(timezone.utc))
     creator_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey('user.id'), index=True)
-
+    location: so.Mapped[Optional[str]] = so.mapped_column(sa.String(150))  # You need to add this field
+    latitude: so.Mapped[Optional[float]] = so.mapped_column(sa.Float)
+    longitude: so.Mapped[Optional[float]] = so.mapped_column(sa.Float)
     creator: so.Mapped['User'] = so.relationship(back_populates='posts')
     required_skills: so.Mapped[List['Skill']] = so.relationship(
         secondary=post_required_skills, back_populates='required_by_posts')

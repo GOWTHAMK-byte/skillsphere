@@ -39,6 +39,9 @@
                         <img src="{{ msg.sender.profile.avatar_url }}" alt="{{ msg.sender.username }}'s avatar" class="w-10 h-10 rounded-full">
                     </a>
                     <div class="max-w-xs md:max-w-md">
+                        <p class="text-sm font-bold text-violet-200 mb-1 {% if msg.sender_id == current_user.id %}text-right{% else %}text-left{% endif %}">
+                            {{ msg.sender.username }}
+                        </p>
                         <div class="p-3 rounded-lg {% if msg.sender_id == current_user.id %}bg-violet-700 text-white{% else %}bg-slate-700 text-violet-200{% endif %}">
                             <p class="text-sm">{{ msg.content }}</p>
                         </div>
@@ -86,7 +89,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- Shared Setup ---
     const postId = {{ post.id }};
-    const currentUserId = {{ current_user.id }}; // Store current user's ID
+    const currentUserId = {{ current_user.id }};
     const socket = io('/chat');
 
     // =================================================================
@@ -103,24 +106,18 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     socket.on('receive_message', (data) => {
-        // ### DEBUGGING STEP ###
-        // This will print the received message data to your browser's console.
-        console.log('Received data:', data);
-        console.log('Is sender_id equal to currentUserId?', data.sender_id == currentUserId);
-
-        // ### MORE ROBUST CHECK ###
-        // Using '==' handles cases where one ID is a number and the other is a string.
         if (data.sender_id == currentUserId) {
-            return; // If it's your own message, do nothing and exit.
+            return;
         }
 
-        // This code will only run for messages from OTHER users.
+        // CHANGE 2: Added sender's username to incoming messages
         const messageHtml = `
             <div class="flex items-start gap-3">
                 <a href="/user/${data.username}">
                     <img src="${data.avatar_url}" alt="${data.username}'s avatar" class="w-10 h-10 rounded-full">
                 </a>
                 <div class="max-w-xs md:max-w-md">
+                    <p class="text-sm font-bold text-violet-200 mb-1 text-left">${data.username}</p>
                     <div class="p-3 rounded-lg bg-slate-700 text-violet-200">
                         <p class="text-sm">${data.content}</p>
                     </div>
@@ -137,14 +134,16 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         const content = contentInput.value.trim();
         if (content) {
-            // Optimistically add your own message to the UI for instant feedback.
             const timestamp = new Date().toLocaleTimeString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+            // CHANGE 3: Added sender's username to your own new messages
             const messageHtml = `
                 <div class="flex items-start gap-3 flex-row-reverse">
                     <a href="{{ url_for('user', username=current_user.username) }}">
                         <img src="{{ current_user.profile.avatar_url }}" alt="{{ current_user.username }}'s avatar" class="w-10 h-10 rounded-full">
                     </a>
                     <div class="max-w-xs md:max-w-md">
+                        <p class="text-sm font-bold text-violet-200 mb-1 text-right">{{ current_user.username }}</p>
                         <div class="p-3 rounded-lg bg-violet-700 text-white">
                             <p class="text-sm">${content}</p>
                         </div>
@@ -156,7 +155,6 @@ document.addEventListener('DOMContentLoaded', () => {
             messagesDiv.innerHTML += messageHtml;
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
-            // Send the message to the server for other users.
             socket.emit('send_message', {
                 post_id: postId,
                 content: content,
@@ -166,15 +164,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // =================================================================
-    // ### WHITEBOARD LOGIC ###
+    // ### WHITEBOARD LOGIC (No Changes) ###
     // =================================================================
     const canvas = document.getElementById('whiteboard');
     const context = canvas.getContext('2d');
-    const whiteboardContainer = document.getElementById('whiteboard-container');
     const whiteboardModal = document.getElementById('whiteboard-modal');
     const openWhiteboardBtn = document.getElementById('open-whiteboard-btn');
     const closeWhiteboardBtn = document.getElementById('close-whiteboard-btn');
-
 
     let isDrawing = false;
     let lastX = 0;
@@ -186,7 +182,6 @@ document.addEventListener('DOMContentLoaded', () => {
         canvas.height = canvas.clientHeight;
     }
     window.addEventListener('resize', resizeCanvas);
-    // Initial resize is now handled when the modal opens
 
     function drawLine(x0, y0, x1, y1, color) {
         context.beginPath();
@@ -205,9 +200,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const rect = canvas.getBoundingClientRect();
         const currentX = e.offsetX || e.touches[0].clientX - rect.left;
         const currentY = e.offsetY || e.touches[0].clientY - rect.top;
-
         drawLine(lastX, lastY, currentX, currentY, currentColor);
-
         socket.emit('drawing', {
             post_id: postId,
             x0: lastX / canvas.width,
@@ -219,7 +212,6 @@ document.addEventListener('DOMContentLoaded', () => {
         [lastX, lastY] = [currentX, currentY];
     }
 
-    // --- Event Listeners for Drawing ---
     canvas.addEventListener('mousedown', (e) => {
         isDrawing = true;
         [lastX, lastY] = [e.offsetX, e.offsetY];
@@ -227,7 +219,6 @@ document.addEventListener('DOMContentLoaded', () => {
     canvas.addEventListener('mousemove', handlePointerMove);
     canvas.addEventListener('mouseup', () => isDrawing = false);
     canvas.addEventListener('mouseout', () => isDrawing = false);
-
     canvas.addEventListener('touchstart', (e) => {
         e.preventDefault();
         isDrawing = true;
@@ -237,18 +228,15 @@ document.addEventListener('DOMContentLoaded', () => {
     canvas.addEventListener('touchmove', handlePointerMove);
     canvas.addEventListener('touchend', () => isDrawing = false);
 
-    // --- Socket Listeners for Whiteboard ---
     socket.on('drawing', (data) => {
         const w = canvas.width;
         const h = canvas.height;
         drawLine(data.x0 * w, data.y0 * h, data.x1 * w, data.y1 * h, data.color);
     });
-
     socket.on('clear_canvas', () => {
         context.clearRect(0, 0, canvas.width, canvas.height);
     });
 
-    // --- Control Listeners for Toolbar and Modal ---
     const colorSwatches = document.querySelectorAll('.color-swatch');
     colorSwatches.forEach(swatch => {
         swatch.addEventListener('click', () => {
@@ -263,10 +251,8 @@ document.addEventListener('DOMContentLoaded', () => {
         socket.emit('clear_canvas', { post_id: postId });
     });
 
-    // MODIFIED: Modal Controls
     openWhiteboardBtn.addEventListener('click', () => {
         whiteboardModal.classList.remove('hidden');
-        // Crucially, resize the canvas *after* it becomes visible
         resizeCanvas();
     });
 
@@ -274,7 +260,6 @@ document.addEventListener('DOMContentLoaded', () => {
         whiteboardModal.classList.add('hidden');
     });
 
-    // Optional: Close modal if user clicks on the backdrop
     whiteboardModal.addEventListener('click', (e) => {
         if (e.target === whiteboardModal) {
             whiteboardModal.classList.add('hidden');
