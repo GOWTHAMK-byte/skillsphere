@@ -2,29 +2,8 @@
 
 {% block head %}
 <style>
-    /* MODIFICATION: Keyframes for the animated background gradient */
-    @keyframes move-gradient {
-        0% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
-    }
-    .animated-gradient-bg {
-        background: linear-gradient(-45deg, #0f0c29, #302b63, #24243e, #4f46e5);
-        background-size: 400% 400%;
-        animation: move-gradient 20s ease infinite;
-    }
-
-    /* MODIFICATION: Keyframes for entrance animations */
-    @keyframes fade-in-up {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    .animate-fade-in-up {
-        animation: fade-in-up 0.7s cubic-bezier(0.215, 0.610, 0.355, 1.000) both;
-    }
-
     .recommend-card {
-        transition: opacity 0.4s ease, box-shadow 0.4s ease, transform 0.4s ease;
+        transition: opacity 0.4s ease, box-shadow 0.4s ease;
     }
     .is-snapping {
         transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -37,37 +16,32 @@
 
 
 {% block content %}
-<div class="fixed inset-0 z-[-1] animated-gradient-bg"></div>
-
-<div class="w-full py-6 relative">
-
-    <div class="absolute top-[-10rem] left-1/2 -translate-x-1/2 w-[60rem] h-[60rem] bg-[radial-gradient(circle_at_center,_rgba(139,92,246,0.15)_0%,_rgba(139,92,246,0)_50%)] z-[-1] pointer-events-none"></div>
-
+<div class="w-full py-6">
     <div class="text-center md:text-left flex flex-col md:flex-row justify-between items-center mb-10 px-4 md:px-0 gap-6">
-        <div class="animate-fade-in-up" style="animation-delay: 100ms;">
-            <h1 class="text-5xl md:text-7xl font-extrabold tracking-tight drop-shadow-[0_4px_8px_rgba(0,0,0,0.3)] bg-clip-text text-transparent bg-gradient-to-r from-violet-300 via-fuchsia-400 to-blue-400">
+        <div>
+            <h1 class="text-5xl md:text-6xl font-extrabold tracking-tight drop-shadow-[0_4px_8px_rgba(0,0,0,0.3)] bg-clip-text text-transparent bg-gradient-to-r from-violet-300 via-fuchsia-400 to-blue-400">
                 Find Your Team
             </h1>
             <p class="mt-2 text-lg text-violet-300">Discover opportunities and collaborate on amazing projects.</p>
         </div>
-        <div class="flex gap-4 animate-fade-in-up" style="animation-delay: 250ms;">
+        <div class="flex gap-4">
             {% if current_user.is_authenticated %}
-                <a href="{{ url_for('create_post') }}" class="inline-block px-6 py-3 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white font-semibold rounded-lg text-base shadow-lg hover:shadow-fuchsia-500/30 transition-all transform hover:scale-105 focus-ring">
+                <a href="{{ url_for('create_post') }}" class="inline-block px-6 py-3 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white font-semibold rounded-lg text-base shadow-lg transition-all transform hover:scale-105 focus-ring">
                     + Create Post
                 </a>
             {% endif %}
         </div>
     </div>
 
-    <form action="{{ url_for('search') }}" method="get" class="mb-10 bg-black/30 p-6 rounded-2xl border border-violet-900/60 shadow-xl backdrop-blur-sm animate-fade-in-up" style="animation-delay: 400ms;">
+    <form action="{{ url_for('search') }}" method="get" class="mb-10 bg-black/30 p-6 rounded-2xl border border-violet-900/60 shadow-xl backdrop-blur-sm">
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
             <div class="md:col-span-2">
                 <label for="q" class="block text-violet-300 font-semibold mb-1 text-sm">Search by Keyword</label>
-                <input type="text" id="q" name="q" value="{{ request.args.get('q', '') }}" placeholder="Event name, description, or skill..." class="w-full px-4 py-2 rounded-lg border border-violet-800 bg-slate-900/50 text-violet-100 placeholder-violet-500 focus:outline-none focus:ring-2 focus:ring-fuchsia-500 focus:border-fuchsia-500 transition">
+                <input type="text" id="q" name="q" value="{{ request.args.get('q', '') }}" placeholder="Event name, description, or skill..." class="w-full px-4 py-2 rounded-lg border border-violet-800 bg-black/40 text-violet-100 focus:outline-none focus:ring-2 focus:ring-violet-500 transition">
             </div>
             <div>
                 <label for="event_type" class="block text-violet-300 font-semibold mb-1 text-sm">Event Type</label>
-                <select id="event_type" name="event_type" class="w-full px-4 py-2 rounded-lg border border-violet-800 bg-slate-900/50 text-violet-100 focus:outline-none focus:ring-2 focus:ring-fuchsia-500 focus:border-fuchsia-500 transition">
+                <select id="event_type" name="event_type" class="w-full px-4 py-2 rounded-lg border border-violet-800 bg-black/40 text-violet-100 focus:outline-none focus:ring-2 focus:ring-violet-500 transition">
                     <option value="">Any</option>
                     <option value="Hackathon" {% if request.args.get('event_type') == 'Hackathon' %}selected{% endif %}>Hackathon</option>
                     <option value="Project" {% if request.args.get('event_type') == 'Project' %}selected{% endif %}>Project</option>
@@ -85,7 +59,7 @@
         </div>
     </form>
 
-    <div class="animate-fade-in-up" style="animation-delay: 550ms;">
+    <div>
         {% if search_mode %}
             <div class="mb-8">
                 <h2 class="text-3xl font-bold text-violet-300 mb-6">Search Results</h2>
@@ -98,7 +72,6 @@
                 {% else %}
                 <div class="text-center bg-black/30 p-12 rounded-2xl shadow-xl border border-violet-900/60">
                     <p class="text-violet-300 text-lg">No posts found matching your search criteria.</p>
-
                 </div>
                 {% endif %}
                 <div class="text-center mt-8">
@@ -110,10 +83,10 @@
         {% else %}
             <div class="mb-6 border-b border-violet-900/60">
                 <nav class="-mb-px flex space-x-6" aria-label="Tabs">
-                    <a href="{{ url_for('index') }}" class="shrink-0 border-b-2 px-1 py-3 text-base font-semibold transition-all duration-300 {% if request.endpoint == 'index' or request.endpoint == 'landing' %}border-fuchsia-500 text-fuchsia-400{% else %}border-transparent text-violet-300 hover:border-violet-400 hover:text-violet-200{% endif %}">
+                    <a href="{{ url_for('index') }}" class="shrink-0 border-b-2 px-1 py-3 text-base font-semibold {% if request.endpoint == 'index' or request.endpoint == 'landing' %}border-fuchsia-500 text-fuchsia-400{% else %}border-transparent text-violet-300 hover:border-violet-400 hover:text-violet-200{% endif %}">
                         All Posts
                     </a>
-                    <a href="{{ url_for('recommend') }}" class="shrink-0 border-b-2 px-1 py-3 text-base font-semibold transition-all duration-300 {% if request.endpoint == 'recommend' %}border-fuchsia-500 text-fuchsia-400{% else %}border-transparent text-violet-300 hover:border-violet-400 hover:text-violet-200{% endif %}">
+                    <a href="{{ url_for('recommend') }}" class="shrink-0 border-b-2 px-1 py-3 text-base font-semibold {% if request.endpoint == 'recommend' %}border-fuchsia-500 text-fuchsia-400{% else %}border-transparent text-violet-300 hover:border-violet-400 hover:text-violet-200{% endif %}">
                         Recommended For You
                     </a>
                 </nav>
