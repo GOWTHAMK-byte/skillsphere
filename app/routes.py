@@ -22,7 +22,7 @@ import fitz  # PyMuPDF for handling PDFs
 from PIL import Image
 import pytesseract  # For Local OCR
 import re
-
+from sqlalchemy import case
 
 # --- NEW: Context Processor to make notifications available globally ---
 @app.context_processor
@@ -709,6 +709,51 @@ def handle_invitation(application_id, action):
     db.session.commit()
     return redirect(url_for('dashboard'))
 
+
+@app.route('/leaderboard')
+@login_required
+def leaderboard():
+    """Displays a leaderboard of users ranked by skill categories."""
+    SKILL_CATEGORIES = {
+        'Frontend': ['react', 'angular', 'vue', 'javascript', 'html', 'css', 'typescript', 'svelte'],
+        'Backend': ['python', 'java', 'node.js', 'ruby', 'php', 'go', 'flask', 'django', 'express.js'],
+        'Database': ['sql', 'mysql', 'postgresql', 'mongodb', 'redis'],
+        'DevOps': ['docker', 'kubernetes', 'aws', 'gcp', 'azure', 'jenkins', 'ci/cd'],
+        'Mobile': ['swift', 'kotlin', 'react native', 'flutter', 'ios', 'android'],
+        'Data Science': ['machine learning', 'tensorflow', 'pytorch', 'pandas', 'numpy', 'scikit-learn'],
+        'Design': ['figma', 'adobe xd', 'sketch', 'ui', 'ux', 'prototyping']
+    }
+
+    active_category = request.args.get('category', 'Frontend')
+    category_skills = SKILL_CATEGORIES.get(active_category, [])
+
+    ranked_users = []
+    if category_skills:
+        score_formula = sa.func.sum(
+            ProfileSkill.level + case((ProfileSkill.is_verified, 5), else_=0)
+        ).label('total_score')
+
+        subquery = sa.select(
+            Profile.user_id,
+            score_formula
+        ).join(Profile.skill_associations).join(ProfileSkill.skill).where(
+            # --- THIS IS THE FIX ---
+            # We now convert the skill name to lowercase before checking it.
+            sa.func.lower(Skill.name).in_(category_skills)
+        ).group_by(Profile.user_id).subquery()
+
+        ranked_users_query = sa.select(User, subquery.c.total_score) \
+            .join(subquery, User.id == subquery.c.user_id) \
+            .order_by(sa.desc(subquery.c.total_score)) \
+            .limit(50)
+
+        ranked_users = db.session.execute(ranked_users_query).all()
+
+    return render_template('leaderboard.html',
+                           title='Leaderboard',
+                           ranked_users=ranked_users,
+                           categories=SKILL_CATEGORIES.keys(),
+                           active_category=active_category)
 
 def recommend_users_for_post(post, limit=5):
     """Recommends users for a post, now with location scoring."""
