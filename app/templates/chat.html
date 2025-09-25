@@ -30,7 +30,24 @@
     </div>
 
     <div class="flex justify-center">
-
+        <!-- To-Do List Sidebar -->
+        <div class="hidden md:flex flex-col w-80 max-w-xs bg-slate-800/50 border border-violet-900/60 rounded-2xl mr-6 h-[700px] p-6">
+            <h2 class="text-xl font-bold text-violet-300 mb-4">To-Do List</h2>
+            <div class="mb-4">
+                <div class="w-full bg-slate-700 rounded-full h-4 mb-2">
+                    <div id="todo-progress-bar" class="bg-violet-500 h-4 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+                <span id="todo-progress-text" class="text-sm text-violet-200">0% complete</span>
+            </div>
+            <ul id="todo-list" class="space-y-3 flex-1 overflow-y-auto mb-4">
+                <!-- To-Do items will be rendered here -->
+            </ul>
+            <form id="todo-form" class="flex gap-2 mt-auto">
+                <input id="todo-input" type="text" placeholder="Add a task..." class="flex-grow px-3 py-2 rounded-lg border border-violet-800 bg-black/40 text-violet-100 focus:outline-none focus:ring-2 focus:ring-violet-500 transition">
+                <button type="submit" class="px-4 py-2 bg-violet-700 hover:bg-violet-600 text-white font-bold rounded-lg shadow-md transition-colors">Add</button>
+            </form>
+        </div>
+        <!-- Chat Area -->
         <div class="w-full max-w-4xl bg-slate-800/50 border border-violet-900/60 rounded-2xl flex flex-col h-[700px]">
             <div id="messages" class="flex-grow p-6 space-y-4 overflow-y-auto">
                 {% for msg in messages %}
@@ -62,7 +79,6 @@
                 </form>
             </div>
         </div>
-
     </div>
 </div>
 
@@ -88,9 +104,75 @@
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     // --- Shared Setup ---
-    const postId = {{ post.id }};
-    const currentUserId = {{ current_user.id }};
+    const postId = {{ post.id|tojson }};
+    const currentUserId = {{ current_user.id|tojson }};
     const socket = io('/chat');
+
+    // =================================================================
+    // ### TO-DO LIST LOGIC ###
+    // =================================================================
+    const todoList = document.getElementById('todo-list');
+    const todoForm = document.getElementById('todo-form');
+    const todoInput = document.getElementById('todo-input');
+    const todoProgressBar = document.getElementById('todo-progress-bar');
+    const todoProgressText = document.getElementById('todo-progress-text');
+
+    // Simple localStorage key for per-room to-dos
+    const todoKey = `chat_todos_${postId}`;
+    let todos = JSON.parse(localStorage.getItem(todoKey) || '[]');
+
+    function renderTodos() {
+        todoList.innerHTML = '';
+        let completed = 0;
+        todos.forEach((todo, idx) => {
+            const li = document.createElement('li');
+            li.className = 'flex items-center gap-2 bg-slate-700 rounded-lg px-3 py-2';
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.checked = !!todo.done;
+            checkbox.className = 'accent-violet-500 w-5 h-5';
+            checkbox.addEventListener('change', () => {
+                todos[idx].done = checkbox.checked;
+                saveTodos();
+                renderTodos();
+            });
+            if (todo.done) completed++;
+            const span = document.createElement('span');
+            span.textContent = todo.text;
+            span.className = 'flex-1 ' + (todo.done ? 'line-through text-violet-400' : 'text-violet-100');
+            const delBtn = document.createElement('button');
+            delBtn.innerHTML = '&times;';
+            delBtn.className = 'ml-2 text-red-400 hover:text-red-600 text-lg font-bold';
+            delBtn.title = 'Delete';
+            delBtn.addEventListener('click', () => {
+                todos.splice(idx, 1);
+                saveTodos();
+                renderTodos();
+            });
+            li.appendChild(checkbox);
+            li.appendChild(span);
+            li.appendChild(delBtn);
+            todoList.appendChild(li);
+        });
+        // Progress
+        const percent = todos.length ? Math.round((completed / todos.length) * 100) : 0;
+        todoProgressBar.style.width = percent + '%';
+        todoProgressText.textContent = percent + '% complete';
+    }
+    function saveTodos() {
+        localStorage.setItem(todoKey, JSON.stringify(todos));
+    }
+    todoForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const text = todoInput.value.trim();
+        if (text) {
+            todos.push({ text, done: false });
+            saveTodos();
+            renderTodos();
+            todoInput.value = '';
+        }
+    });
+    renderTodos();
 
     // =================================================================
     // ### CHAT LOGIC ###
