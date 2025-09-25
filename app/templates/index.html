@@ -138,7 +138,9 @@
             {% elif request.endpoint == 'recommend' %}
                 <div id="recommended">
                     {% if recommended_posts %}
-                    <div id="recommend-swipe-stack" class="relative w-full max-w-md mx-auto h-[640px]" style="perspective: 1000px;">
+                    <!-- START MODIFICATION: Increased height of the card container -->
+                    <div id="recommend-swipe-stack" class="relative w-full max-w-md mx-auto h-[740px]" style="perspective: 1000px;">
+                    <!-- END MODIFICATION -->
                         {% for post in recommended_posts %}
                         <div class="recommend-card absolute inset-0 will-change-transform cursor-grab active:cursor-grabbing bg-slate-800/80 backdrop-blur-sm border border-violet-700/50 rounded-2xl shadow-xl overflow-hidden" data-post-id="{{ post.id }}" style="touch-action: none; transform-origin: center; z-index: {{ recommended_posts|length - loop.index0 }};">
                             <div class="relative h-full w-full">
