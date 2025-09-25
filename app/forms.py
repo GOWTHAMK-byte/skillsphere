@@ -11,13 +11,10 @@ from app.models import Skill
 from wtforms.widgets import ListWidget, CheckboxInput
 
 
-# This is a custom field that will render a multi-select as a list of checkboxes
 class MultiCheckboxField(QuerySelectMultipleField):
     widget = ListWidget(prefix_label=False)
     option_widget = CheckboxInput()
 
-
-# This function provides the choices for the skills field
 def get_skills():
     return db.session.scalars(sa.select(Skill).order_by(Skill.name)).all()
 
@@ -82,15 +79,13 @@ class CreatePostForm(FlaskForm):
     team_size = IntegerField('Team Size', validators=[Optional(), NumberRange(min=1, max=10)])
     required_skills = StringField('Skills Required')
     event_datetime = DateField('Event Date', format='%Y-%m-%d', validators=[Optional()])
-    event_venue = StringField('Event Venue (or "Online")', validators=[Optional()])
-    # --- NEW FIELD ---
-    location = StringField('Location (City/Region for Recommendations)', validators=[Optional(), Length(max=150)])
+    # --- MODIFIED ---
+    location = StringField('Venue or Location', validators=[DataRequired(), Length(max=200)])
     submit = SubmitField('Create Post')
     male_slots = IntegerField('Number of Males', default=0)
     female_slots = IntegerField('Number of Females', default=0)
 
 
-# --- MODIFIED: VerifySkillForm ---
 class VerifySkillForm(FlaskForm):
     proof_type = SelectField('Proof Type', choices=[
         ('project', 'Project URL'),
@@ -100,8 +95,5 @@ class VerifySkillForm(FlaskForm):
     project_url = URLField('Project URL', validators=[Optional(), URL()])
     certificate_file = FileField('Certificate Upload (.pdf, .png, .jpg)',
                                  validators=[FileAllowed(['pdf', 'png', 'jpg', 'jpeg']), Optional()])
-
-    # --- NEW: Added the missing event_id field ---
     event_id = SelectField('Select Completed Event', coerce=int, validators=[Optional()])
-
     submit = SubmitField('Submit Proof for Review')

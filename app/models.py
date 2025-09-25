@@ -6,9 +6,6 @@ from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timezone
 from flask import url_for
-# --- REMOVED ---
-# The old profile_skills helper table is no longer needed.
-# profile_skills = db.Table(...)
 
 post_required_skills = db.Table(
     'post_required_skills',
@@ -29,20 +26,15 @@ def load_user(id):
     return db.session.get(User, int(id))
 
 
-# --- NEW MODEL ---
-# This is the new Association Object that holds extra data about the
-# relationship between a Profile and a Skill.
 class ProfileSkill(db.Model):
     __tablename__ = 'profile_skill'
     profile_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey('profile.id'), primary_key=True)
     skill_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey('skill.id'), primary_key=True)
 
-    # New attributes to track skill progression
     level: so.Mapped[int] = so.mapped_column(sa.Integer, default=1)
     is_verified: so.Mapped[bool] = so.mapped_column(sa.Boolean, default=False)
-    proof_link: so.Mapped[Optional[str]] = so.mapped_column(sa.String(255))  # URL to project or path to certificate
+    proof_link: so.Mapped[Optional[str]] = so.mapped_column(sa.String(255))
 
-    # Relationships to the parent models
     profile: so.Mapped['Profile'] = so.relationship(back_populates='skill_associations')
     skill: so.Mapped['Skill'] = so.relationship(back_populates='profile_associations')
 
@@ -86,7 +78,6 @@ class Profile(db.Model):
     github_url: so.Mapped[Optional[str]] = so.mapped_column(sa.String(255))
     linkedin_url: so.Mapped[Optional[str]] = so.mapped_column(sa.String(255))
     resume_file: so.Mapped[Optional[str]] = so.mapped_column(sa.String(255))
-    location: so.Mapped[Optional[str]] = so.mapped_column(sa.String(150))
     avatar_filename: so.Mapped[Optional[str]] = so.mapped_column(sa.String(255))
     gender: so.Mapped[Optional[str]] = so.mapped_column(sa.String(20))
 
@@ -95,20 +86,14 @@ class Profile(db.Model):
     location: so.Mapped[Optional[str]] = so.mapped_column(sa.String(150))
     latitude: so.Mapped[Optional[float]] = so.mapped_column(sa.Float)
     longitude: so.Mapped[Optional[float]] = so.mapped_column(sa.Float)
-    # --- MODIFIED RELATIONSHIP ---
-    # The old `skills` relationship is replaced with `skill_associations`
     skill_associations: so.Mapped[List['ProfileSkill']] = so.relationship(
         back_populates='profile', cascade="all, delete-orphan")
 
-    # --- NEW HELPER ---
-    # A property to easily get a simple list of Skill objects,
-    # making the transition easier in your templates.
     @property
     def avatar_url(self):
         if self.avatar_filename:
             return url_for('static', filename=f'avatars/{self.avatar_filename}')
         else:
-            # Assumes you have a 'default.png' in your 'static/avatars' folder
             return url_for('static', filename='avatars/default.png')
 
     @property
@@ -123,9 +108,6 @@ class Skill(db.Model):
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
     name: so.Mapped[str] = so.mapped_column(sa.String(50), unique=True, index=True)
 
-    # --- MODIFIED RELATIONSHIP ---
-    # The old `profiles` relationship is replaced. `profile_associations` now
-    # links to the new ProfileSkill model.
     profile_associations: so.Mapped[List['ProfileSkill']] = so.relationship(
         back_populates='skill', cascade="all, delete-orphan")
 
@@ -135,9 +117,6 @@ class Skill(db.Model):
     def __repr__(self):
         return f'<Skill {self.name}>'
 
-
-# No changes needed for Post, Application, ChatMessage, or ChatReadStatus models.
-# They are included here for completeness.
 
 class Post(db.Model):
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
@@ -149,11 +128,12 @@ class Post(db.Model):
     event_poster_filename: so.Mapped[Optional[str]] = so.mapped_column(sa.String(255))
     event_type: so.Mapped[Optional[str]] = so.mapped_column(sa.String(50))
     event_datetime: so.Mapped[Optional[datetime]] = so.mapped_column(sa.DateTime)
-    event_venue: so.Mapped[Optional[str]] = so.mapped_column(sa.String(200))
+    # --- REMOVED ---
+    # event_venue: so.Mapped[Optional[str]] = so.mapped_column(sa.String(200))
     timestamp: so.Mapped[datetime] = so.mapped_column(
         index=True, default=lambda: datetime.now(timezone.utc))
     creator_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey('user.id'), index=True)
-    location: so.Mapped[Optional[str]] = so.mapped_column(sa.String(150))  # You need to add this field
+    location: so.Mapped[Optional[str]] = so.mapped_column(sa.String(150))
     latitude: so.Mapped[Optional[float]] = so.mapped_column(sa.Float)
     longitude: so.Mapped[Optional[float]] = so.mapped_column(sa.Float)
     creator: so.Mapped['User'] = so.relationship(back_populates='posts')

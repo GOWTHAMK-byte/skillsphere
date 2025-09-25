@@ -56,18 +56,15 @@
                     </div>
                 </div>
                 <div>
-                    {{ form.event_venue.label(class="block text-violet-200 text-lg font-semibold mb-2") }}
-                    {{ form.event_venue(class="w-full px-4 py-3 border border-violet-800 bg-black/40 text-violet-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-600 text-base", placeholder="e.g., Main Auditorium or Online") }}
+                    {{ form.location.label(class="block text-violet-200 text-lg font-semibold mb-2") }}
+                    {{ form.location(class="w-full px-4 py-3 border border-violet-800 bg-black/40 text-violet-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-600 text-base", placeholder="e.g., Online, VIT Chennai Campus") }}
+                     <p class="text-xs text-violet-400 mt-1">Specify "Online" or a physical address for recommendations.</p>
+                    {% for error in form.location.errors %}
+                    <span class="text-red-400 text-sm mt-1 block">{{ error }}</span>
+                    {% endfor %}
                 </div>
             </div>
-            <div>
-                {{ form.location.label(class="block text-violet-200 text-lg font-semibold mb-2") }}
-                {{ form.location(class="w-full px-4 py-3 border border-violet-800 bg-black/40 text-violet-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-600 text-base", placeholder="e.g., Chennai, India") }}
-                <p class="text-xs text-violet-400 mt-1">This helps recommend your post to nearby users.</p>
-                {% for error in form.location.errors %}
-                <span class="text-red-400 text-sm mt-1 block">{{ error }}</span>
-                {% endfor %}
-            </div>
+
             <div>
                 {{ form.required_skills.label(class="block text-violet-200 text-lg font-semibold mb-2") }}
                 {{ form.required_skills(class="w-full bg-black/40 text-violet-100 border border-violet-800 rounded-lg px-4 py-3 text-base", placeholder="Add required skills...") }}
@@ -100,9 +97,9 @@ document.addEventListener('DOMContentLoaded', function() {
     if (skillsInput && window.Tagify) {
         var tagify = new Tagify(skillsInput, {
             enforceWhitelist: false,
-            whitelist: [], // Will be loaded dynamically
+            whitelist: [],
             dropdown: {
-                enabled: 1, // show suggestions after 1 char
+                enabled: 1,
                 maxItems: 10,
                 classname: 'skills-suggestions',
                 fuzzySearch: true,
@@ -123,9 +120,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // --- REVISED: Gender ratio slider script ---
-
-    // 1. Select the necessary elements from the page
+    // --- Gender ratio slider script ---
     const teamSizeInput = document.querySelector('input[name="team_size"]');
     const genderRatioSection = document.getElementById('gender-ratio-section');
     const genderSlider = document.getElementById('gender-slider');
@@ -134,7 +129,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const maleSlotsInput = document.getElementById('male_slots');
     const femaleSlotsInput = document.getElementById('female_slots');
 
-    // 2. This function updates the counts and hidden inputs when the slider is moved
     function updateSliderValues() {
         const teamSize = parseInt(genderSlider.max, 10);
         const maleCount = parseInt(genderSlider.value, 10);
@@ -146,33 +140,21 @@ document.addEventListener('DOMContentLoaded', function() {
         femaleSlotsInput.value = femaleCount;
     }
 
-    // 3. This function shows/hides the section based on the team size input
     function handleTeamSizeChange() {
         const teamSize = parseInt(teamSizeInput.value, 10);
-
-        // **This is the core logic:**
-        // If the parsed value is a valid number and it's greater than 0...
         if (!isNaN(teamSize) && teamSize > 0) {
-            // ...make the section visible.
             genderRatioSection.style.display = 'block';
-
-            // Then, configure the slider
             genderSlider.max = teamSize;
-            genderSlider.value = Math.floor(teamSize / 2); // Set a default value
-            updateSliderValues(); // Update text/inputs immediately
+            genderSlider.value = Math.floor(teamSize / 2);
+            updateSliderValues();
         } else {
-            // ...otherwise, hide the section.
             genderRatioSection.style.display = 'none';
         }
     }
 
-    // 4. Run the logic only if all the required elements were found on the page
-    //    This prevents errors if the HTML is changed or missing an element.
     if (teamSizeInput && genderRatioSection && genderSlider) {
         teamSizeInput.addEventListener('input', handleTeamSizeChange);
         genderSlider.addEventListener('input', updateSliderValues);
-
-        // Run once on page load to handle cases where the form is pre-filled
         handleTeamSizeChange();
     }
 });

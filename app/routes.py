@@ -14,62 +14,43 @@ from datetime import datetime, timezone
 from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderTimedOut, GeocoderUnavailable
 from geopy.distance import great_circle
-# --- MODIFIED IMPORTS ---
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
-import fitz  # PyMuPDF for handling PDFs
+import fitz
 from PIL import Image
-import pytesseract  # For Local OCR
+import pytesseract
 import re
 from sqlalchemy import case
 
-# --- NEW: Context Processor to make notifications available globally ---
+
 @app.context_processor
 def inject_notifications():
     if not current_user.is_authenticated:
         return dict(notifications_count=0)
-
-    # Find all post IDs where the user is a member
     user_post_ids = db.session.scalars(
         sa.select(Post.id)
         .where(sa.or_(Post.creator_id == current_user.id, Post.teammates.any(id=current_user.id)))
     ).all()
-
     if not user_post_ids:
         return dict(notifications_count=0)
-
-    # Get all of the user's read statuses in one query
     read_statuses = db.session.scalars(
         sa.select(ChatReadStatus)
         .where(ChatReadStatus.user_id == current_user.id, ChatReadStatus.post_id.in_(user_post_ids))
     ).all()
-
-    # Create a map for quick lookup: post_id -> last_read_timestamp
     last_read_map = {rs.post_id: rs.last_read for rs in read_statuses}
-
     total_unread = 0
-
-    # Loop through each chat room and count unread messages
     for post_id in user_post_ids:
         last_read_time = last_read_map.get(post_id)
-
         query = sa.select(sa.func.count(ChatMessage.id)).where(ChatMessage.post_id == post_id)
-
-        # If the user has read this chat before, only count messages after that time
         if last_read_time:
             query = query.where(ChatMessage.timestamp > last_read_time)
-
         unread_count = db.session.scalar(query)
         total_unread += unread_count or 0
-
     return dict(notifications_count=total_unread)
 
 
 def analyze_certificate_locally(file_stream, filename, user_name, skill_name):
-    """
-    Analyzes a certificate image/pdf locally using Tesseract OCR.
-    """
     try:
         text = ''
         if filename.lower().endswith('.pdf'):
@@ -85,40 +66,30 @@ def analyze_certificate_locally(file_stream, filename, user_name, skill_name):
             text = pytesseract.image_to_string(img)
         else:
             return {'success': False, 'reason': 'Unsupported file type. Please upload a PDF, PNG, or JPG.'}
-
         if not text.strip():
             return {'success': False,
                     'reason': 'No text could be detected on the document. Please try a clearer image.'}
-
         full_text = text.lower()
-
         user_name_parts = user_name.lower().split()
         first_name_found = user_name_parts[0] in full_text if user_name_parts else False
-
         checks = {
             "User Name": first_name_found,
             "Skill Name": skill_name.lower() in full_text,
             "Certificate Keywords": any(
                 keyword in full_text for keyword in ['certificate', 'certified', 'completion', 'course', 'award'])
         }
-
         if all(checks.values()):
             return {'success': True, 'reason': 'All checks passed.'}
         else:
             missing = [key for key, passed in checks.items() if not passed]
             reason = f"the following could not be found on the document: {', '.join(missing)}. Please upload a clearer or more relevant document."
             return {'success': False, 'reason': reason}
-
     except Exception as e:
         app.logger.error(f"Local OCR (Tesseract) error: {e}")
         return {'success': False, 'reason': 'a system error occurred during document analysis.'}
 
 
 def get_recommended_posts(user, limit=6):
-    """
-    Generates highly personalized post recommendations for a user, with proximity scoring.
-    """
-    # These dictionaries remain the same
     SKILL_CATEGORIES = {
         'Frontend': ['react', 'angular', 'vue', 'javascript', 'html', 'css', 'typescript', 'svelte'],
         'Backend': ['python', 'java', 'node.js', 'ruby', 'php', 'go', 'flask', 'django', 'express.js'],
@@ -137,10 +108,8 @@ def get_recommended_posts(user, limit=6):
     }
     WEIGHTS = {
         'skill': 4.0, 'complementary': 8.0, 'rarity': 2.0, 'event_type': 3.0,
-        'recency': 1.5, 'location': 6.0, 'nlp': 10.0  # Increased location weight
+        'recency': 1.5, 'location': 6.0, 'nlp': 10.0
     }
-
-    # --- NLP Data Preparation (No Changes) ---
     all_posts_for_nlp = db.session.scalars(sa.select(Post)).all()
     user_applications_for_nlp = db.session.scalars(
         sa.select(Application).where(Application.applicant_id == user.id)).all()
@@ -162,8 +131,6 @@ def get_recommended_posts(user, limit=6):
                 user_taste_vector = np.asarray(user_taste_vector)
         except ValueError:
             pass
-
-    # --- User Profile Preparation ---
     user_skills = {assoc.skill.name.lower() for assoc in user.profile.skill_associations}
     is_new_user = not user_skills and not user_applications_for_nlp and not user.profile.bio
     if is_new_user:
@@ -171,31 +138,23 @@ def get_recommended_posts(user, limit=6):
             sa.select(Post).where(Post.creator_id != user.id, Post.applications_closed == False).order_by(
                 Post.timestamp.desc())).all()
         return all_posts[:5] if len(all_posts) >= 5 else all_posts
-
     user_gender = user.profile.gender
     user_event_types = {app.post.event_type for app in user_applications_for_nlp if app.post and app.post.event_type}
     user_posts_created = db.session.scalars(sa.select(Post).where(Post.creator_id == user.id)).all()
     for post in user_posts_created:
         if post.event_type: user_event_types.add(post.event_type)
-
-    # NEW: Get user coordinates once before the loop
     user_coords = (user.profile.latitude,
                    user.profile.longitude) if user.profile and user.profile.latitude is not None and user.profile.longitude is not None else None
-
-    # --- Scoring Logic ---
     applied_post_ids = {app.post_id for app in user_applications_for_nlp}
     teammate_post_ids = {post.id for post in user.teams}
     candidate_posts = db.session.scalars(
         sa.select(Post).where(Post.creator_id != user.id, Post.applications_closed == False)).unique().all()
-
     scored_posts = []
     for post in candidate_posts:
         if post.id in applied_post_ids or post.id in teammate_post_ids:
             continue
         if post.gender_requirement and post.gender_requirement != 'Any' and post.gender_requirement != user_gender:
             continue
-
-        # --- Skill, Rarity, Complementary, Event, Recency, NLP scores (No Changes) ---
         required_skills = {skill.name.lower() for skill in post.required_skills}
         matched_skills = user_skills & required_skills
         skill_score = len(matched_skills)
@@ -216,23 +175,17 @@ def get_recommended_posts(user, limit=6):
             post_vector = post_vectors[post.id]
             if np.any(user_taste_vector) and np.any(post_vector.toarray()):
                 nlp_score = cosine_similarity(user_taste_vector.reshape(1, -1), post_vector)[0][0]
-
-        # --- REVISED: Location Scoring with Proximity ---
         location_score = 0
         post_coords = (
-        post.latitude, post.longitude) if post.latitude is not None and post.longitude is not None else None
-
+            post.latitude, post.longitude) if post.latitude is not None and post.longitude is not None else None
         if user_coords and post_coords:
             distance_km = great_circle(user_coords, post_coords).kilometers
-
-            if distance_km <= 50:  # Very close / Same city
+            if distance_km <= 50:
                 location_score = 1.0
-            elif distance_km <= 120:  # Neighboring city (e.g., Chennai to Vellore)
+            elif distance_km <= 120:
                 location_score = 0.6
-            elif distance_km <= 300:  # Reasonable travel distance
+            elif distance_km <= 300:
                 location_score = 0.3
-
-        # --- Final Score Calculation (No Changes) ---
         total_score = (
                 (skill_score * WEIGHTS['skill']) +
                 (complementary_score * WEIGHTS['complementary']) +
@@ -242,11 +195,8 @@ def get_recommended_posts(user, limit=6):
                 (location_score * WEIGHTS['location']) +
                 (nlp_score * WEIGHTS['nlp'])
         )
-
         if total_score > 0:
             scored_posts.append((total_score, post.timestamp, post))
-
-    # --- Final Filtering and Sorting (No Changes) ---
     scored_posts.sort(key=lambda x: x[0], reverse=True)
     seen_creators, unique_posts = {}, []
     for _, _, post in scored_posts:
@@ -261,9 +211,9 @@ def get_recommended_posts(user, limit=6):
         remaining_posts = [post for _, _, post in scored_posts if post not in unique_posts]
         needed = limit - len(unique_posts)
         unique_posts.extend(remaining_posts[:needed])
-
     return unique_posts
-# ... (routes from landing to messages remain unchanged) ...
+
+
 @app.route("/")
 def landing():
     if current_user.is_authenticated:
@@ -278,11 +228,7 @@ def index():
     app_status = {}
     posts = db.session.scalars(sa.select(Post).order_by(Post.timestamp.desc())).unique().all()
     seen = set()
-    unique_posts = []
-    for p in posts:
-        if p.id not in seen:
-            unique_posts.append(p)
-            seen.add(p.id)
+    unique_posts = [p for p in posts if p.id not in seen and not seen.add(p.id)]
     posts = unique_posts
     messages_summary = []
     if current_user.is_authenticated:
@@ -319,11 +265,7 @@ def recommend():
     app_status = {}
     recommended_posts = get_recommended_posts(current_user)
     seen = set()
-    unique_recommended = []
-    for p in recommended_posts:
-        if p.id not in seen:
-            unique_recommended.append(p)
-            seen.add(p.id)
+    unique_recommended = [p for p in recommended_posts if p.id not in seen and not seen.add(p.id)]
     recommended_posts = unique_recommended
     app_rows = db.session.scalars(sa.select(Application).where(Application.applicant_id == current_user.id)).all()
     for app in app_rows:
@@ -372,11 +314,7 @@ def user(username):
         sa.select(Post).where(Post.creator_id == user.id).order_by(Post.timestamp.desc()).options(
             sa.orm.joinedload(Post.teammates))).unique().all()
     seen = set()
-    unique_posts = []
-    for p in posts:
-        if p.id not in seen:
-            unique_posts.append(p)
-            seen.add(p.id)
+    unique_posts = [p for p in posts if p.id not in seen and not seen.add(p.id)]
     posts = unique_posts
     return render_template('user.html', user=user, posts=posts)
 
@@ -402,7 +340,6 @@ def search_skills():
 def edit_profile():
     form = EditProfileForm()
     if form.validate_on_submit():
-        # --- Avatar handling ---
         if form.avatar.data:
             random_hex = secrets.token_hex(8)
             _, f_ext = os.path.splitext(form.avatar.data.filename)
@@ -410,9 +347,6 @@ def edit_profile():
             picture_path = os.path.join(app.root_path, 'static/avatars', picture_fn)
             form.avatar.data.save(picture_path)
             current_user.profile.avatar_filename = picture_fn
-
-        # --- Geocoding logic (this block is correct) ---
-        # This check correctly prevents re-geocoding if the location hasn't changed.
         if current_user.profile.location != form.location.data:
             current_user.profile.location = form.location.data
             if form.location.data:
@@ -432,8 +366,6 @@ def edit_profile():
             else:
                 current_user.profile.latitude = None
                 current_user.profile.longitude = None
-
-        # --- General profile data assignment ---
         current_user.profile.name = form.name.data
         current_user.profile.bio = form.bio.data
         current_user.profile.college = form.college.data
@@ -441,23 +373,16 @@ def edit_profile():
         current_user.profile.degree = form.degree.data
         current_user.profile.github_url = form.github_url.data
         current_user.profile.linkedin_url = form.linkedin_url.data
-        # current_user.profile.location = form.location.data  <-- BUG: This redundant line has been removed.
         current_user.profile.gender = form.gender.data
-
-        # --- Skills handling ---
         try:
             skills_data = json.loads(form.skills.data)
         except (json.JSONDecodeError, TypeError):
             skills_data = []
         current_skills = {assoc.skill.name for assoc in current_user.profile.skill_associations}
         form_skills = {item.get('value', '').strip() for item in skills_data if item.get('value', '').strip()}
-
-        # Remove old skills
         for assoc in list(current_user.profile.skill_associations):
             if assoc.skill.name not in form_skills:
                 db.session.delete(assoc)
-
-        # Add new skills
         for skill_name in form_skills:
             if skill_name not in current_skills:
                 skill = db.session.scalar(sa.select(Skill).where(Skill.name == skill_name))
@@ -466,12 +391,9 @@ def edit_profile():
                     db.session.add(skill)
                 new_assoc = ProfileSkill(profile=current_user.profile, skill=skill)
                 db.session.add(new_assoc)
-
         db.session.commit()
         flash('Your changes have been saved.')
         return redirect(url_for('user', username=current_user.username))
-
-    # --- GET request logic (remains the same) ---
     elif request.method == 'GET':
         form.name.data = current_user.profile.name
         form.bio.data = current_user.profile.bio
@@ -482,7 +404,6 @@ def edit_profile():
         form.linkedin_url.data = current_user.profile.linkedin_url
         form.location.data = current_user.profile.location
         form.gender.data = current_user.profile.gender
-
     return render_template("edit_profile.html", title='Edit Profile', form=form)
 
 
@@ -498,21 +419,19 @@ def create_post():
             poster_filename = random_hex + f_ext
             poster_path = os.path.join(app.root_path, 'static/posters', poster_filename)
             form.event_poster.data.save(poster_path)
-
         try:
             team_size = int(form.team_size.data or 0)
             male_slots = int(form.male_slots.data or 0)
             female_slots = int(form.female_slots.data or 0)
         except (ValueError, TypeError):
             team_size, male_slots, female_slots = 0, 0, 0
-
         if team_size > 0 and (male_slots + female_slots != team_size):
             flash(
                 f'The sum of male and female slots ({male_slots} + {female_slots}) must equal the team size ({team_size}).',
                 'danger')
             return render_template('create_post.html', title='Create a New Post', form=form)
 
-        # Create the Post object, now including the location from the form
+        # --- MODIFIED ---
         post = Post(event_name=form.event_name.data,
                     description=form.description.data,
                     idea=form.idea.data,
@@ -520,14 +439,11 @@ def create_post():
                     event_poster_filename=poster_filename,
                     event_type=form.event_type.data,
                     event_datetime=form.event_datetime.data,
-                    event_venue=form.event_venue.data,
                     creator=current_user,
                     gender_requirement=form.gender_requirement.data if hasattr(form, 'gender_requirement') else None,
                     male_slots=male_slots,
                     female_slots=female_slots,
-                    location=form.location.data)  # Added location field
-
-        # --- NEW: Geocode the post's location ---
+                    location=form.location.data)
         if post.location:
             try:
                 geolocator = Nominatim(user_agent="skillsphere_app")
@@ -536,20 +452,16 @@ def create_post():
                     post.latitude = location_data.latitude
                     post.longitude = location_data.longitude
                 else:
-                    # If location is not found, nullify coordinates
                     post.latitude = None
                     post.longitude = None
             except (GeocoderTimedOut, GeocoderUnavailable):
                 flash('Could not connect to the location service. Post created without location data.', 'warning')
                 post.latitude = None
                 post.longitude = None
-
-        # Add required skills to the post
         try:
             skills_data = json.loads(form.required_skills.data)
         except (json.JSONDecodeError, TypeError):
             skills_data = []
-
         for skill_item in skills_data:
             skill_name = skill_item.get('value', '').strip()
             if skill_name:
@@ -558,12 +470,10 @@ def create_post():
                     skill = Skill(name=skill_name)
                     db.session.add(skill)
                 post.required_skills.append(skill)
-
         db.session.add(post)
         db.session.commit()
         flash('Your post has been created successfully!', 'success')
         return redirect(url_for('user', username=current_user.username))
-
     return render_template('create_post.html', title='Create a New Post', form=form)
 
 
@@ -636,34 +546,27 @@ def manage_post(post_id):
     return render_template('manage_post.html', post=post, applications=applications,
                            recommended_users=recommended_users)
 
+
 @app.route('/invite/<int:post_id>/<int:user_id>', methods=['POST'])
 @login_required
 def invite_user(post_id, user_id):
-    """Handles the logic for a post creator inviting a recommended user."""
     post = db.session.get(Post, post_id)
     recommended_user = db.session.get(User, user_id)
-
-    # Authorization checks
     if not post or not recommended_user:
         flash('Post or user not found.', 'danger')
         return redirect(url_for('index'))
     if post.creator_id != current_user.id:
         flash('You are not authorized to invite users to this post.', 'danger')
         return redirect(url_for('manage_post', post_id=post_id))
-
-    # Check if the user has already applied or been invited
     existing_application = db.session.scalar(
         sa.select(Application).where(
             Application.post_id == post_id,
             Application.applicant_id == user_id
         )
     )
-
     if existing_application:
         flash(f'{recommended_user.username} has already applied or been invited.', 'warning')
         return redirect(url_for('manage_post', post_id=post_id))
-
-    # Create an 'Invited' application on behalf of the user
     invitation = Application(
         post_id=post.id,
         applicant_id=recommended_user.id,
@@ -671,7 +574,6 @@ def invite_user(post_id, user_id):
     )
     db.session.add(invitation)
     db.session.commit()
-
     flash(f'{recommended_user.username} has been invited to join the team!', 'success')
     return redirect(url_for('manage_post', post_id=post_id))
 
@@ -679,33 +581,24 @@ def invite_user(post_id, user_id):
 @app.route('/handle_invitation/<int:application_id>/<action>', methods=['POST'])
 @login_required
 def handle_invitation(application_id, action):
-    """Handles a user accepting or rejecting a post invitation."""
     application = db.session.get(Application, application_id)
-
-    # Security check: Ensure the application exists and belongs to the current user
     if not application or application.applicant_id != current_user.id:
         flash('Invalid invitation.', 'danger')
         return redirect(url_for('dashboard'))
-
-    # Ensure the action is only taken on an 'Invited' status
     if application.status != 'Invited':
         flash('This invitation has already been responded to.', 'warning')
         return redirect(url_for('dashboard'))
-
     post = application.post
     if action == 'accept':
         application.status = 'Accepted'
         if current_user not in post.teammates:
             post.teammates.append(current_user)
         flash(f'You have successfully joined the team for "{post.event_name}"!', 'success')
-
     elif action == 'reject':
         application.status = 'Rejected'
         flash(f'You have rejected the invitation to "{post.event_name}".', 'info')
-
     else:
         flash('Invalid action.', 'danger')
-
     db.session.commit()
     return redirect(url_for('dashboard'))
 
@@ -713,7 +606,6 @@ def handle_invitation(application_id, action):
 @app.route('/leaderboard')
 @login_required
 def leaderboard():
-    """Displays a leaderboard of users ranked by skill categories."""
     SKILL_CATEGORIES = {
         'Frontend': ['react', 'angular', 'vue', 'javascript', 'html', 'css', 'typescript', 'svelte'],
         'Backend': ['python', 'java', 'node.js', 'ruby', 'php', 'go', 'flask', 'django', 'express.js'],
@@ -723,119 +615,84 @@ def leaderboard():
         'Data Science': ['machine learning', 'tensorflow', 'pytorch', 'pandas', 'numpy', 'scikit-learn'],
         'Design': ['figma', 'adobe xd', 'sketch', 'ui', 'ux', 'prototyping']
     }
-
     active_category = request.args.get('category', 'Frontend')
     category_skills = SKILL_CATEGORIES.get(active_category, [])
-
     ranked_users = []
     if category_skills:
         score_formula = sa.func.sum(
             ProfileSkill.level + case((ProfileSkill.is_verified, 5), else_=0)
         ).label('total_score')
-
         subquery = sa.select(
             Profile.user_id,
             score_formula
         ).join(Profile.skill_associations).join(ProfileSkill.skill).where(
-            # --- THIS IS THE FIX ---
-            # We now convert the skill name to lowercase before checking it.
             sa.func.lower(Skill.name).in_(category_skills)
         ).group_by(Profile.user_id).subquery()
-
         ranked_users_query = sa.select(User, subquery.c.total_score) \
             .join(subquery, User.id == subquery.c.user_id) \
             .order_by(sa.desc(subquery.c.total_score)) \
             .limit(50)
-
         ranked_users = db.session.execute(ranked_users_query).all()
-
     return render_template('leaderboard.html',
                            title='Leaderboard',
                            ranked_users=ranked_users,
                            categories=SKILL_CATEGORIES.keys(),
                            active_category=active_category)
 
+
 def recommend_users_for_post(post, limit=5):
-    """Recommends users for a post, now with location scoring."""
     required_skills = {skill.name.lower() for skill in post.required_skills}
     teammate_ids = {user.id for user in post.teammates}
     applicant_ids = {app.applicant_id for app in post.applications}
     exclude_ids = teammate_ids | applicant_ids | {post.creator_id}
-
-    # Prepare post's location for comparison
-    post_location = (post.location or '').strip().lower()
     post_coords = (post.latitude, post.longitude) if post.latitude and post.longitude else None
-
     candidates = db.session.scalars(sa.select(User).where(User.id.notin_(exclude_ids))).all()
     scored_users = []
-
     for user in candidates:
         if not user.profile:
             continue
-
-        # --- Skill Scoring (Existing Logic) ---
         user_skill_data = {assoc.skill.name.lower(): assoc for assoc in user.profile.skill_associations}
         skill_score = 0
         for req_skill_name in required_skills:
             if req_skill_name in user_skill_data:
                 assoc = user_skill_data[req_skill_name]
-                skill_score += 2  # Base score for having the skill
+                skill_score += 2
                 if assoc.is_verified:
-                    skill_score += 5  # Bonus for verified skill
-                skill_score += assoc.level  # Bonus for skill level
-
-        # --- NEW: Location Scoring ---
+                    skill_score += 5
+                skill_score += assoc.level
         location_score = 0
-        user_location = (user.profile.location or '').strip().lower()
         user_coords = (
-        user.profile.latitude, user.profile.longitude) if user.profile.latitude and user.profile.longitude else None
-
+            user.profile.latitude, user.profile.longitude) if user.profile.latitude and user.profile.longitude else None
         if post_coords and user_coords:
             distance_km = great_circle(post_coords, user_coords).kilometers
-
-            if distance_km <= 50:  # Within the same city or very close
+            if distance_km <= 50:
                 location_score = 10
-            elif distance_km <= 100:  # Neighboring city (like Chennai to Kanchipuram)
+            elif distance_km <= 100:
                 location_score = 5
-
-        # --- Total Score Calculation ---
         total_score = skill_score + location_score
-
         if total_score > 0:
             scored_users.append((total_score, user))
-
-    # Sort candidates by their total score in descending order
     scored_users.sort(reverse=True, key=lambda x: x[0])
-
-    # Return the top N recommended users
     return [user for score, user in scored_users[:limit]]
+
 
 @socketio.on('drawing', namespace='/chat')
 @login_required
 def handle_drawing(data):
-    """
-    Handles whiteboard drawing data from a client and broadcasts it to the room.
-    """
     post_id = data.get('post_id')
     if not post_id:
         return
-
-    # Broadcast the drawing data to all clients in the room except the sender
     emit('drawing', data, to=str(post_id), skip_sid=request.sid)
 
 
 @socketio.on('clear_canvas', namespace='/chat')
 @login_required
 def handle_clear_canvas(data):
-    """
-    Handles a request to clear the whiteboard and broadcasts it to the room.
-    """
     post_id = data.get('post_id')
     if not post_id:
         return
-
-    # Broadcast the clear event to all clients in the room except the sender
     emit('clear_canvas', to=str(post_id), skip_sid=request.sid)
+
 
 @app.route('/teams')
 @login_required
@@ -867,11 +724,7 @@ def search():
     posts_query = posts_query.order_by(Post.timestamp.desc())
     posts = db.session.scalars(posts_query).unique().all()
     seen = set()
-    unique_posts = []
-    for p in posts:
-        if p.id not in seen:
-            unique_posts.append(p)
-            seen.add(p.id)
+    unique_posts = [p for p in posts if p.id not in seen and not seen.add(p.id)]
     posts = unique_posts
     if current_user.is_authenticated:
         app_rows = db.session.scalars(sa.select(Application).where(Application.applicant_id == current_user.id)).all()
@@ -935,6 +788,7 @@ def handle_join(data):
     join_room(str(post_id))
     emit('status', {'message': f'{current_user.username} joined the chat.'}, room=str(post_id))
 
+
 @socketio.on('send_message', namespace='/chat')
 @login_required
 def handle_send_message(data):
@@ -942,7 +796,6 @@ def handle_send_message(data):
     content = data.get('content', '').strip()
     post = db.session.get(Post, post_id)
 
-    # Authorization check
     if not post or (current_user not in post.teammates and current_user != post.creator):
         emit('error', {'message': 'Unauthorized'}, room=request.sid)
         return
@@ -952,7 +805,6 @@ def handle_send_message(data):
         db.session.add(msg)
         db.session.commit()
 
-        # MODIFIED: Added 'avatar_url' to the payload
         emit('receive_message',
              {'username': current_user.username,
               'content': content,
@@ -1038,7 +890,6 @@ def verify_skill(skill_id):
                 flash(f'Verification successful! Your skill "{skill.name}" is now verified.', 'success')
                 return redirect(url_for('user', username=current_user.username))
             else:
-                # --- MODIFICATION: Rerender template with rejection message instead of flashing ---
                 rejection_reason = analysis_result['reason']
                 return render_template('verify_skill.html',
                                        title=f'Verify Skill: {skill.name}',
@@ -1046,7 +897,6 @@ def verify_skill(skill_id):
                                        skill=skill,
                                        rejection_reason=rejection_reason)
 
-        # This part handles project and event verification
         if not assoc.is_verified:
             assoc.level += 1
         assoc.is_verified = True
@@ -1057,7 +907,6 @@ def verify_skill(skill_id):
             event_post = db.session.get(Post, form.event_id.data)
             if event_post:
                 assoc.proof_link = url_for('manage_post', post_id=event_post.id, _external=True)
-
         db.session.commit()
         flash(f'Verification submitted for {skill.name}!', 'info')
         return redirect(url_for('user', username=current_user.username))
