@@ -2,7 +2,7 @@
 
 {% block content %}
 
-{# --- FIX: Define the reusable macro at the top of the file, before it is called --- #}
+{# --- UPDATED MACRO --- #}
 {% macro applicant_card(applicant, post, applications) %}
     {# Determine if this card is for an applicant or a recommendation #}
     {% set app = applications|selectattr('applicant_id', 'equalto', applicant.id)|first %}
@@ -44,7 +44,7 @@
                 </div>
             </div>
              <div class="flex-shrink-0 w-full sm:w-auto flex sm:flex-col items-center justify-center gap-2 mt-4 sm:mt-0">
-                {% if app %} {# It's an applicant #}
+                {% if app %} {# It's an applicant with an existing application #}
                     {% if app.status == 'Pending' %}
                     <form method="post" class="w-full sm:w-auto">
                         <input type="hidden" name="app_id" value="{{ app.id }}">
@@ -61,15 +61,28 @@
                         </button>
                     </form>
                     {% else %}
-                        <span class="text-sm font-bold {{ 'text-green-400' if app.status == 'Accepted' else 'text-red-400' }}">{{ app.status }}</span>
+                        {# Display status for Accepted, Rejected, or Invited applicants #}
+                        <span class="text-sm font-bold
+                            {% if app.status == 'Accepted' %}text-green-400
+                            {% elif app.status == 'Rejected' %}text-red-400
+                            {% elif app.status == 'Invited' %}text-yellow-400
+                            {% endif %}">
+                            {{ 'Pending Invite' if app.status == 'Invited' else app.status }}
+                        </span>
                     {% endif %}
-                {% else %} {# It's a recommendation #}
-                    {# Placeholder for future invite logic #}
+                {% else %} {# It's a recommendation with no existing application #}
+                    <form method="post" action="{{ url_for('invite_user', post_id=post.id, user_id=applicant.id) }}" class="w-full sm:w-auto">
+                        <button class="w-full text-center flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition-colors text-sm focus-ring">
+                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                            Invite
+                        </button>
+                    </form>
                 {% endif %}
             </div>
         </div>
     </div>
 {% endmacro %}
+
 
 
 <div class="max-w-7xl mx-auto py-8">

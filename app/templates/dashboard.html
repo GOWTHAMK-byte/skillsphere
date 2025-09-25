@@ -19,7 +19,6 @@
 {% block content %}
 <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
 
-    <!-- Header Section -->
     <div class="text-center mb-16">
         <h1 class="text-5xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-sky-400 via-rose-400 to-lime-400 animate-gradient mb-4">
             Welcome, {{ current_user.profile.name or current_user.username }}!
@@ -33,9 +32,7 @@
         </div>
     </div>
 
-    <!-- Main Content Grid -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
-        <!-- Your Teams Section -->
         <div class="space-y-8">
             <h2 class="text-3xl font-bold text-violet-100 flex items-center gap-3">
                 <svg class="h-8 w-8 text-fuchsia-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m9-4V7a4 4 0 00-8 0v3m8 4a4 4 0 01-8 0" /></svg>
@@ -88,7 +85,6 @@
             {% endif %}
         </div>
 
-        <!-- Your Applications Section -->
         <div class="space-y-8">
             <h2 class="text-3xl font-bold text-violet-100 flex items-center gap-3">
                 <svg class="h-8 w-8 text-fuchsia-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
@@ -98,20 +94,45 @@
                 <ul class="space-y-6">
                     {% for app in applications %}
                         <li class="bg-black/30 backdrop-blur-md border border-violet-900/60 rounded-xl p-5 shadow-lg transition-all duration-300 hover:border-violet-700/80 hover:shadow-fuchsia-500/20">
-                            <div class="flex justify-between items-start">
-                                <a href="{{ url_for('user', username=app.post.creator.username) }}" class="text-fuchsia-300 hover:text-fuchsia-200 font-bold text-lg">{{ app.post.event_name }}</a>
-                                {% if app.status == 'Accepted' %}
-                                    <span class="text-xs bg-green-800/60 text-green-200 px-3 py-1 rounded-full font-semibold">Accepted</span>
-                                {% elif app.status == 'Rejected' %}
-                                    <span class="text-xs bg-red-800/60 text-red-200 px-3 py-1 rounded-full font-semibold">Rejected</span>
-                                {% else %}
-                                    <span class="text-xs bg-gray-800/60 text-gray-200 px-3 py-1 rounded-full font-semibold">Pending</span>
-                                {% endif %}
+
+                            {# --- Conditional block for Invitations --- #}
+                            {% if app.status == 'Invited' %}
+                            <div>
+                                <p class="text-violet-200">
+                                    <a href="{{ url_for('user', username=app.post.creator.username) }}" class="font-bold text-fuchsia-300 hover:underline">{{ app.post.creator.username }}</a>
+                                    has invited you to join the project:
+                                    <span class="font-bold text-white">{{ app.post.event_name }}</span>
+                                </p>
+                                <p class="text-xs text-fuchsia-400 mt-1">Invited on {{ app.timestamp.strftime('%B %d, %Y') }}</p>
+                                <div class="mt-4 flex items-center gap-3 border-t border-white/10 pt-4">
+                                    <form method="post" action="{{ url_for('handle_invitation', application_id=app.id, action='accept') }}" class="flex-1">
+                                        <button type="submit" class="w-full bg-green-600 hover:bg-green-500 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition-colors text-sm focus-ring">Accept</button>
+                                    </form>
+                                    <form method="post" action="{{ url_for('handle_invitation', application_id=app.id, action='reject') }}" class="flex-1">
+                                        <button type="submit" class="w-full bg-red-800/70 hover:bg-red-700/80 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition-colors text-sm focus-ring">Reject</button>
+                                    </form>
+                                </div>
                             </div>
-                             <p class="text-xs text-fuchsia-400 mt-1">Applied on {{ app.timestamp.strftime('%B %d, %Y') }}</p>
-                            <div class="mt-4 flex justify-between items-center border-t border-white/10 pt-4">
-                                <a href="{{ url_for('user', username=app.post.creator.username) }}" class="bg-white/10 hover:bg-white/20 text-white font-semibold py-2 px-4 rounded-lg transition-colors text-sm focus-ring">View Post</a>
+
+                            {# --- Logic for standard applications --- #}
+                            {% else %}
+                            <div>
+                                <div class="flex justify-between items-start">
+                                    <span class="text-fuchsia-300 font-bold text-lg">{{ app.post.event_name }}</span>
+                                    {% if app.status == 'Accepted' %}
+                                        <span class="text-xs bg-green-800/60 text-green-200 px-3 py-1 rounded-full font-semibold">Accepted</span>
+                                    {% elif app.status == 'Rejected' %}
+                                        <span class="text-xs bg-red-800/60 text-red-200 px-3 py-1 rounded-full font-semibold">Rejected</span>
+                                    {% else %}
+                                        <span class="text-xs bg-gray-800/60 text-gray-200 px-3 py-1 rounded-full font-semibold">Pending</span>
+                                    {% endif %}
+                                </div>
+                                <p class="text-xs text-fuchsia-400 mt-1">Applied on {{ app.timestamp.strftime('%B %d, %Y') }}</p>
+                                <div class="mt-4 flex justify-between items-center border-t border-white/10 pt-4">
+                                    <a href="{{ url_for('user', username=app.post.creator.username) }}" class="bg-white/10 hover:bg-white/20 text-white font-semibold py-2 px-4 rounded-lg transition-colors text-sm focus-ring">View Post</a>
+                                </div>
                             </div>
+                            {% endif %}
                         </li>
                     {% endfor %}
                 </ul>
@@ -123,6 +144,6 @@
                 </div>
             {% endif %}
         </div>
+        </div>
     </div>
-</div>
 {% endblock %}

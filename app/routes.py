@@ -116,8 +116,6 @@ def get_recommended_posts(user, limit=6):
     """
     Generates highly personalized post recommendations for a user.
     """
-    # (This function remains unchanged)
-    # ...
     SKILL_CATEGORIES = {
         'Frontend': ['react', 'angular', 'vue', 'javascript', 'html', 'css', 'typescript', 'svelte'],
         'Backend': ['python', 'java', 'node.js', 'ruby', 'php', 'go', 'flask', 'django', 'express.js'],
@@ -138,16 +136,23 @@ def get_recommended_posts(user, limit=6):
         'skill': 4.0, 'complementary': 8.0, 'rarity': 2.0, 'event_type': 3.0,
         'recency': 1.5, 'location': 4.0, 'nlp': 10.0
     }
+
+    # --- NLP Data Preparation ---
     all_posts_for_nlp = db.session.scalars(sa.select(Post)).all()
     user_applications_for_nlp = db.session.scalars(
         sa.select(Application).where(Application.applicant_id == user.id)).all()
-    user_liked_texts = [app.post.description + ' ' + app.post.idea for app in user_applications_for_nlp if
-                        app.post and app.post.description and app.post.idea]
+
+    # Corrected: Gracefully handle None for description/idea
+    user_liked_texts = [(app.post.description or '') + ' ' + (app.post.idea or '') for app in user_applications_for_nlp
+                        if app.post]
+
     if not user_liked_texts and user.profile.bio:
         user_liked_texts.append(user.profile.bio)
+
     post_texts = {post.id: (post.description or '') + ' ' + (post.idea or '') for post in all_posts_for_nlp}
     corpus = list(post_texts.values()) + user_liked_texts
     user_taste_vector, post_vectors = None, {}
+
     if len(corpus) > 1:
         try:
             vectorizer = TfidfVectorizer(stop_words='english', min_df=1)
@@ -158,84 +163,112 @@ def get_recommended_posts(user, limit=6):
                 if hasattr(user_taste_vector, 'toarray'): user_taste_vector = user_taste_vector.toarray()
                 user_taste_vector = np.asarray(user_taste_vector)
         except ValueError:
-            pass
-    user_skills = {skill.name.lower() for skill in user.profile.skills}
+            pass  # Handles cases with empty vocabulary
+
+    # --- User Profile Preparation ---
+    # Corrected: Fetch skills via the association table
+    user_skills = {assoc.skill.name.lower() for assoc in user.profile.skill_associations}
+
     is_new_user = not user_skills and not user_applications_for_nlp and not user.profile.bio
     if is_new_user:
         all_posts = db.session.scalars(
             sa.select(Post).where(Post.creator_id != user.id, Post.applications_closed == False).order_by(
                 Post.timestamp.desc())).all()
         return all_posts[:5] if len(all_posts) >= 5 else all_posts
+
     user_gender = user.profile.gender
     user_location = (user.profile.location or '').strip().lower() if user.profile and user.profile.location else ''
     user_event_types = {app.post.event_type for app in user_applications_for_nlp if app.post and app.post.event_type}
     user_posts_created = db.session.scalars(sa.select(Post).where(Post.creator_id == user.id)).all()
     for post in user_posts_created:
         if post.event_type: user_event_types.add(post.event_type)
+
+    # --- Scoring Logic ---
     applied_post_ids = {app.post_id for app in user_applications_for_nlp}
     teammate_post_ids = {post.id for post in user.teams}
     candidate_posts = db.session.scalars(
         sa.select(Post).where(Post.creator_id != user.id, Post.applications_closed == False)).unique().all()
+
     scored_posts = []
     for post in candidate_posts:
-        if post.id in applied_post_ids or post.id in teammate_post_ids: continue
-        if post.gender_requirement and post.gender_requirement != 'Any' and post.gender_requirement != user_gender: continue
+        if post.id in applied_post_ids or post.id in teammate_post_ids:
+            continue
+        if post.gender_requirement and post.gender_requirement != 'Any' and post.gender_requirement != user_gender:
+            continue
+
         required_skills = {skill.name.lower() for skill in post.required_skills}
         matched_skills = user_skills & required_skills
+
+        # Calculate individual scores
         skill_score = len(matched_skills)
         rarity_bonus = sum(1 for skill in matched_skills if db.session.scalar(
             sa.select(sa.func.count(post_required_skills.c.post_id)).join(Skill).where(Skill.name == skill)) < 5)
+
         user_skill_cats = {cat for cat, skills in SKILL_CATEGORIES.items() if any(s in user_skills for s in skills)}
         post_skill_cats = {cat for cat, skills in SKILL_CATEGORIES.items() if any(s in required_skills for s in skills)}
         missing_cats = post_skill_cats - user_skill_cats
-        complementary_score = 0
-        for missing_cat in missing_cats:
-            if any(user_cat in COMPLEMENTARY_PAIRS and missing_cat in COMPLEMENTARY_PAIRS[user_cat] for user_cat in
-                   user_skill_cats):
-                complementary_score += 1
+
+        complementary_score = sum(1 for missing_cat in missing_cats if any(
+            user_cat in COMPLEMENTARY_PAIRS and missing_cat in COMPLEMENTARY_PAIRS[user_cat] for user_cat in
+            user_skill_cats))
+
         event_type_score = 1 if post.event_type in user_event_types else 0
+
         now_utc = datetime.now(timezone.utc)
         post_time = post.timestamp.replace(tzinfo=timezone.utc) if post.timestamp.tzinfo is None else post.timestamp
         recency_score = max(0, 1 - ((now_utc - post_time).days / 30))
-        post_location = (post.event_venue or '').strip().lower() if post.event_venue else ''
+
+        post_location = (post.event_venue or '').strip().lower()
         location_score = 0
         if user_location and post_location:
             if user_location in post_location or post_location in user_location:
                 location_score = 1.0
             else:
-                user_city, post_city = user_location.split(',')[0].strip(), post_location.split(',')[0].strip()
-                if user_city and post_city and user_city == post_city: location_score = 0.7
+                user_city = user_location.split(',')[0].strip()
+                post_city = post_location.split(',')[0].strip()
+                if user_city and post_city and user_city == post_city:
+                    location_score = 0.7
+
         nlp_score = 0
         if user_taste_vector is not None and post.id in post_vectors:
             post_vector = post_vectors[post.id]
-            user_vec_dense = user_taste_vector
-            if hasattr(user_vec_dense, 'toarray'): user_vec_dense = user_vec_dense.toarray()
-            user_vec_dense = np.asarray(user_vec_dense)
-            post_vec_dense = post_vector
-            if hasattr(post_vec_dense, 'toarray'): post_vec_dense = post_vec_dense.toarray()
-            post_vec_dense = np.asarray(post_vec_dense)
-            if np.any(user_vec_dense) and np.any(post_vec_dense):
-                nlp_score = cosine_similarity(user_vec_dense, post_vec_dense)[0][0]
-        total_score = ((skill_score * WEIGHTS['skill']) + (complementary_score * WEIGHTS['complementary']) + (
-                    rarity_bonus * WEIGHTS['rarity']) + (event_type_score * WEIGHTS['event_type']) + (
-                                   recency_score * WEIGHTS['recency']) + (location_score * WEIGHTS['location']) + (
-                                   nlp_score * WEIGHTS['nlp']))
-        scored_posts.append((total_score, post.timestamp, post))
+            if np.any(user_taste_vector) and np.any(post_vector.toarray()):
+                nlp_score = cosine_similarity(user_taste_vector.reshape(1, -1), post_vector)[0][0]
+
+        # Calculate total score
+        total_score = (
+                (skill_score * WEIGHTS['skill']) +
+                (complementary_score * WEIGHTS['complementary']) +
+                (rarity_bonus * WEIGHTS['rarity']) +
+                (event_type_score * WEIGHTS['event_type']) +
+                (recency_score * WEIGHTS['recency']) +
+                (location_score * WEIGHTS['location']) +
+                (nlp_score * WEIGHTS['nlp'])
+        )
+
+        if total_score > 0:
+            scored_posts.append((total_score, post.timestamp, post))
+
+    # --- Final Filtering and Sorting ---
     scored_posts.sort(key=lambda x: x[0], reverse=True)
+
     seen_creators, unique_posts = {}, []
     for _, _, post in scored_posts:
         creator_id = post.creator_id
-        if seen_creators.get(creator_id, 0) >= 2: continue
+        if seen_creators.get(creator_id, 0) >= 2:
+            continue
         unique_posts.append(post)
         seen_creators[creator_id] = seen_creators.get(creator_id, 0) + 1
-        if len(unique_posts) >= limit: break
-    if len(unique_posts) < 5:
-        all_sorted_posts = [post for _, _, post in scored_posts if post not in unique_posts]
-        for post in all_sorted_posts:
-            unique_posts.append(post)
-            if len(unique_posts) >= 5: break
-    return unique_posts
+        if len(unique_posts) >= limit:
+            break
 
+    # Fill with remaining posts if limit not reached
+    if len(unique_posts) < limit and len(unique_posts) < len(scored_posts):
+        remaining_posts = [post for _, _, post in scored_posts if post not in unique_posts]
+        needed = limit - len(unique_posts)
+        unique_posts.extend(remaining_posts[:needed])
+
+    return unique_posts
 
 # ... (routes from landing to messages remain unchanged) ...
 @app.route("/")
@@ -541,6 +574,78 @@ def manage_post(post_id):
     return render_template('manage_post.html', post=post, applications=applications,
                            recommended_users=recommended_users)
 
+@app.route('/invite/<int:post_id>/<int:user_id>', methods=['POST'])
+@login_required
+def invite_user(post_id, user_id):
+    """Handles the logic for a post creator inviting a recommended user."""
+    post = db.session.get(Post, post_id)
+    recommended_user = db.session.get(User, user_id)
+
+    # Authorization checks
+    if not post or not recommended_user:
+        flash('Post or user not found.', 'danger')
+        return redirect(url_for('index'))
+    if post.creator_id != current_user.id:
+        flash('You are not authorized to invite users to this post.', 'danger')
+        return redirect(url_for('manage_post', post_id=post_id))
+
+    # Check if the user has already applied or been invited
+    existing_application = db.session.scalar(
+        sa.select(Application).where(
+            Application.post_id == post_id,
+            Application.applicant_id == user_id
+        )
+    )
+
+    if existing_application:
+        flash(f'{recommended_user.username} has already applied or been invited.', 'warning')
+        return redirect(url_for('manage_post', post_id=post_id))
+
+    # Create an 'Invited' application on behalf of the user
+    invitation = Application(
+        post_id=post.id,
+        applicant_id=recommended_user.id,
+        status='Invited'
+    )
+    db.session.add(invitation)
+    db.session.commit()
+
+    flash(f'{recommended_user.username} has been invited to join the team!', 'success')
+    return redirect(url_for('manage_post', post_id=post_id))
+
+
+@app.route('/handle_invitation/<int:application_id>/<action>', methods=['POST'])
+@login_required
+def handle_invitation(application_id, action):
+    """Handles a user accepting or rejecting a post invitation."""
+    application = db.session.get(Application, application_id)
+
+    # Security check: Ensure the application exists and belongs to the current user
+    if not application or application.applicant_id != current_user.id:
+        flash('Invalid invitation.', 'danger')
+        return redirect(url_for('dashboard'))
+
+    # Ensure the action is only taken on an 'Invited' status
+    if application.status != 'Invited':
+        flash('This invitation has already been responded to.', 'warning')
+        return redirect(url_for('dashboard'))
+
+    post = application.post
+    if action == 'accept':
+        application.status = 'Accepted'
+        if current_user not in post.teammates:
+            post.teammates.append(current_user)
+        flash(f'You have successfully joined the team for "{post.event_name}"!', 'success')
+
+    elif action == 'reject':
+        application.status = 'Rejected'
+        flash(f'You have rejected the invitation to "{post.event_name}".', 'info')
+
+    else:
+        flash('Invalid action.', 'danger')
+
+    db.session.commit()
+    return redirect(url_for('dashboard'))
 
 def recommend_users_for_post(post, limit=5):
     required_skills = {skill.name.lower() for skill in post.required_skills}
@@ -565,6 +670,32 @@ def recommend_users_for_post(post, limit=5):
     scored.sort(reverse=True, key=lambda x: x[0])
     return [user for score, user in scored[:limit]]
 
+@socketio.on('drawing', namespace='/chat')
+@login_required
+def handle_drawing(data):
+    """
+    Handles whiteboard drawing data from a client and broadcasts it to the room.
+    """
+    post_id = data.get('post_id')
+    if not post_id:
+        return
+
+    # Broadcast the drawing data to all clients in the room except the sender
+    emit('drawing', data, to=str(post_id), skip_sid=request.sid)
+
+
+@socketio.on('clear_canvas', namespace='/chat')
+@login_required
+def handle_clear_canvas(data):
+    """
+    Handles a request to clear the whiteboard and broadcasts it to the room.
+    """
+    post_id = data.get('post_id')
+    if not post_id:
+        return
+
+    # Broadcast the clear event to all clients in the room except the sender
+    emit('clear_canvas', to=str(post_id), skip_sid=request.sid)
 
 @app.route('/teams')
 @login_required
@@ -664,23 +795,32 @@ def handle_join(data):
     join_room(str(post_id))
     emit('status', {'message': f'{current_user.username} joined the chat.'}, room=str(post_id))
 
-
 @socketio.on('send_message', namespace='/chat')
 @login_required
 def handle_send_message(data):
     post_id = data.get('post_id')
     content = data.get('content', '').strip()
     post = db.session.get(Post, post_id)
+
+    # Authorization check
     if not post or (current_user not in post.teammates and current_user != post.creator):
         emit('error', {'message': 'Unauthorized'}, room=request.sid)
         return
+
     if content:
         msg = ChatMessage(post_id=post_id, sender_id=current_user.id, content=content)
         db.session.add(msg)
         db.session.commit()
-        emit('receive_message', {'username': current_user.username, 'content': content,
-                                 'timestamp': msg.timestamp.strftime('%b %d, %I:%M %p'), 'sender_id': current_user.id},
-             room=str(post_id))
+
+        # THE FIX IS ON THIS LINE:
+        # We now use 'to' and 'skip_sid' to broadcast to everyone EXCEPT the sender.
+        emit('receive_message',
+             {'username': current_user.username,
+              'content': content,
+              'timestamp': msg.timestamp.strftime('%b %d, %I:%M %p'),
+              'sender_id': current_user.id},
+             to=str(post_id),
+             skip_sid=request.sid)
 
 
 @app.route('/messages')
@@ -878,4 +1018,5 @@ def delete_post(post_id):
     db.session.commit()
     flash('Post deleted successfully.', 'success')
     return redirect(url_for('user', username=current_user.username))
+
 

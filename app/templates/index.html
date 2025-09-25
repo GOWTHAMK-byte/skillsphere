@@ -1,8 +1,22 @@
 {% extends 'base.html' %}
 
+{% block head %}
+<style>
+    .recommend-card {
+        transition: opacity 0.4s ease, box-shadow 0.4s ease;
+    }
+    .is-snapping {
+        transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .is-top-card {
+        box-shadow: 0 0 35px 8px rgba(167, 139, 250, 0.25);
+    }
+</style>
+{% endblock %}
+
+
 {% block content %}
 <div class="w-full py-6">
-    <!-- Hero Section -->
     <div class="text-center md:text-left flex flex-col md:flex-row justify-between items-center mb-10 px-4 md:px-0 gap-6">
         <div>
             <h1 class="text-5xl md:text-6xl font-extrabold tracking-tight drop-shadow-[0_4px_8px_rgba(0,0,0,0.3)] bg-clip-text text-transparent bg-gradient-to-r from-violet-300 via-fuchsia-400 to-blue-400">
@@ -19,7 +33,6 @@
         </div>
     </div>
 
-    <!-- Search Bar -->
     <form action="{{ url_for('search') }}" method="get" class="mb-10 bg-black/30 p-6 rounded-2xl border border-violet-900/60 shadow-xl backdrop-blur-sm">
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
             <div class="md:col-span-2">
@@ -46,7 +59,6 @@
         </div>
     </form>
 
-    <!-- Content Area with Tabs -->
     <div>
         {% if search_mode %}
             <div class="mb-8">
@@ -69,63 +81,74 @@
                 </div>
             </div>
         {% else %}
-            <!-- Tabs Navigation -->
             <div class="mb-6 border-b border-violet-900/60">
                 <nav class="-mb-px flex space-x-6" aria-label="Tabs">
-                    <a href="#" class="tab-link active shrink-0 border-b-2 border-fuchsia-500 px-1 py-3 text-base font-semibold text-fuchsia-400" data-tab="all-posts">
+                    <a href="{{ url_for('index') }}" class="shrink-0 border-b-2 px-1 py-3 text-base font-semibold {% if request.endpoint == 'index' or request.endpoint == 'landing' %}border-fuchsia-500 text-fuchsia-400{% else %}border-transparent text-violet-300 hover:border-violet-400 hover:text-violet-200{% endif %}">
                         All Posts
                     </a>
-                    <a href="#" class="tab-link shrink-0 border-b-2 border-transparent px-1 py-3 text-base font-semibold text-violet-300 hover:border-violet-400 hover:text-violet-200" data-tab="recommended">
+                    <a href="{{ url_for('recommend') }}" class="shrink-0 border-b-2 px-1 py-3 text-base font-semibold {% if request.endpoint == 'recommend' %}border-fuchsia-500 text-fuchsia-400{% else %}border-transparent text-violet-300 hover:border-violet-400 hover:text-violet-200{% endif %}">
                         Recommended For You
                     </a>
                 </nav>
             </div>
 
-            <!-- All Posts Tab Content -->
-            <div id="all-posts" class="tab-content">
-                {% if posts %}
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {% for post in posts %}
+            {% if request.endpoint == 'index' or request.endpoint == 'landing' %}
+                <div id="all-posts">
+                    {% if posts %}
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        {% for post in posts %}
                         <div class="post-card opacity-0 translate-y-8 will-change-transform">
                             {% include '_post.html' %}
                         </div>
-                    {% endfor %}
-                </div>
-                {% else %}
-                <div class="text-center bg-black/30 p-12 rounded-2xl shadow-xl border border-violet-900/60">
-                    <p class="text-violet-300 text-lg">No posts available yet. Why not create one?</p>
-                </div>
-                {% endif %}
-            </div>
-
-            <!-- Recommended Tab Content -->
-            <div id="recommended" class="tab-content hidden">
-                {% if recommended_posts %}
-                <div id="recommend-swipe-stack" class="relative w-full max-w-md mx-auto min-h-[500px]">
-                    {% for post in recommended_posts %}
-                    <div class="recommend-card absolute inset-0 transition-all duration-300 ease-in-out will-change-transform cursor-grab active:cursor-grabbing" data-post-id="{{ post.id }}" style="touch-action: none; transform-origin: bottom center; z-index: {{ recommended_posts|length - loop.index0 }};">
-                        {% include '_post.html' %}
+                        {% endfor %}
                     </div>
-                    {% endfor %}
+                    {% else %}
+                    <div class="text-center bg-black/30 p-12 rounded-2xl shadow-xl border border-violet-900/60">
+                        <p class="text-violet-300 text-lg">No posts available yet. Why not create one?</p>
+                    </div>
+                    {% endif %}
                 </div>
-                <div id="no-more-recommendations" class="hidden text-center text-violet-400 text-xl py-20">
-                    <p>No more recommendations for now.</p>
-                    <p class="text-base">Check back later!</p>
+            {% elif request.endpoint == 'recommend' %}
+                <div id="recommended">
+                    {% if recommended_posts %}
+                    <div id="recommend-swipe-stack" class="relative w-full max-w-md mx-auto h-[640px]" style="perspective: 1000px;">
+                        {% for post in recommended_posts %}
+                        <div class="recommend-card absolute inset-0 will-change-transform cursor-grab active:cursor-grabbing bg-slate-800/80 backdrop-blur-sm border border-violet-700/50 rounded-2xl shadow-xl overflow-hidden" data-post-id="{{ post.id }}" style="touch-action: none; transform-origin: center; z-index: {{ recommended_posts|length - loop.index0 }};">
+                            <div class="relative h-full w-full">
+                                {% include '_post.html' %}
+
+                                <div class="swipe-overlay swipe-pass absolute top-1/4 left-8 transform -rotate-20 flex items-center justify-center opacity-0 pointer-events-none">
+                                    <span class="border-4 border-red-500 text-red-500 text-4xl font-bold uppercase px-6 py-2 rounded-lg">Pass</span>
+                                </div>
+                                <div class="swipe-overlay swipe-apply absolute top-1/4 right-8 transform rotate-20 flex items-center justify-center opacity-0 pointer-events-none">
+                                    <span class="border-4 border-green-500 text-green-500 text-4xl font-bold uppercase px-6 py-2 rounded-lg">Apply</span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div id="no-more-recommendations" class="hidden text-center text-violet-400 py-20">
+                        <svg class="mx-auto h-16 w-16 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        <h3 class="mt-4 text-2xl font-semibold text-violet-300">That's everyone!</h3>
+                        <p class="mt-1 text-base text-violet-400">You've seen all the current recommendations. Check back later for more.</p>
+                    </div>
+                    <div id="swipe-controls" class="flex justify-center items-center gap-6 mt-6">
+                        <button id="pass-btn" class="h-20 w-20 rounded-full bg-red-900/30 text-red-400 border-2 border-red-800 flex items-center justify-center transition-all transform hover:scale-110 hover:bg-red-900/50 focus-ring">
+                            <svg class="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                        <button id="apply-btn" class="h-24 w-24 rounded-full bg-green-900/30 text-green-400 border-2 border-green-800 flex items-center justify-center transition-all transform hover:scale-110 hover:bg-green-900/50 focus-ring">
+                             <svg class="w-12 h-12" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd" /></svg>
+                        </button>
+                    </div>
+                    {% else %}
+                    <div class="text-center bg-black/30 p-12 rounded-2xl shadow-xl border border-violet-900/60">
+                        <svg class="mx-auto h-12 w-12 text-violet-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <p class="mt-4 text-xl font-semibold text-violet-300">No recommendations available yet.</p>
+                        <p class="text-violet-400 mt-1">Complete your profile and apply to a few posts to get personalized suggestions!</p>
+                    </div>
+                    {% endif %}
                 </div>
-                <div id="swipe-controls" class="flex justify-center items-center gap-6 mt-6">
-                    <button id="pass-btn" class="h-20 w-20 rounded-full bg-red-900/30 text-red-400 border-2 border-red-800 flex items-center justify-center transition-all transform hover:scale-110 hover:bg-red-900/50 focus-ring">
-                        <svg class="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-                    </button>
-                    <button id="apply-btn" class="h-24 w-24 rounded-full bg-green-900/30 text-green-400 border-2 border-green-800 flex items-center justify-center transition-all transform hover:scale-110 hover:bg-green-900/50 focus-ring">
-                         <svg class="w-12 h-12" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd" /></svg>
-                    </button>
-                </div>
-                {% else %}
-                <div class="text-center bg-black/30 p-12 rounded-2xl shadow-xl border border-violet-900/60">
-                    <p class="text-violet-300 text-lg">No recommendations available yet. Complete your profile to get started!</p>
-                </div>
-                {% endif %}
-            </div>
+            {% endif %}
         {% endif %}
     </div>
 </div>
@@ -135,32 +158,6 @@
 <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    // Tab switching logic
-    const tabs = document.querySelectorAll('.tab-link');
-    const tabContents = document.querySelectorAll('.tab-content');
-
-    tabs.forEach(tab => {
-        tab.addEventListener('click', e => {
-            e.preventDefault();
-            const target = tab.dataset.tab;
-
-            tabs.forEach(t => {
-                t.classList.remove('active', 'border-fuchsia-500', 'text-fuchsia-400');
-                t.classList.add('border-transparent', 'text-violet-300', 'hover:border-violet-400', 'hover:text-violet-200');
-            });
-            tab.classList.add('active', 'border-fuchsia-500', 'text-fuchsia-400');
-            tab.classList.remove('border-transparent', 'text-violet-300');
-
-            tabContents.forEach(content => {
-                if (content.id === target) {
-                    content.classList.remove('hidden');
-                } else {
-                    content.classList.add('hidden');
-                }
-            });
-        });
-    });
-
     // Staggered animation for post cards
     const cards = document.querySelectorAll('.post-card');
     cards.forEach((card, i) => {
@@ -178,23 +175,34 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const updateStack = () => {
             recommendCards = Array.from(stack.querySelectorAll('.recommend-card'));
+
             if (recommendCards.length === 0) {
                 if (noMoreEl) noMoreEl.classList.remove('hidden');
                 if (swipeControls) swipeControls.classList.add('hidden');
-            } else {
-                recommendCards.forEach((card, index) => {
-                    card.style.transform = `translateY(${index * -8}px) scale(${1 - index * 0.04})`;
-                    card.style.zIndex = recommendCards.length - index;
-                });
+                return;
             }
+
+            recommendCards.forEach((card, index) => {
+                const isTop = index === recommendCards.length - 1;
+                card.style.transform = `translateY(${ (recommendCards.length - 1 - index) * -16}px) scale(${1 - (recommendCards.length - 1 - index) * 0.04})`;
+                card.style.zIndex = index;
+
+                if (isTop) {
+                    card.classList.add('is-top-card');
+                } else {
+                    card.classList.remove('is-top-card');
+                }
+            });
         };
 
         const handleAction = (card, action, direction) => {
             if (!card) return;
             const postId = card.getAttribute('data-post-id');
-            const rotation = (Math.random() - 0.5) * 20; // Slight random rotation
-            card.style.transform = `translateX(${direction * 150}%) rotate(${direction * 15 + rotation}deg)`;
-            card.classList.add('opacity-0');
+            const rotation = (Math.random() - 0.5) * 20;
+
+            card.classList.add('is-snapping');
+            card.style.transform = `translateX(${direction * 200}%) rotate(${direction * 15 + rotation}deg)`;
+            card.style.opacity = '0';
 
             fetch(`/api/recommend/${action}/${postId}`, { method: 'POST' })
                 .then(() => {
@@ -203,31 +211,51 @@ document.addEventListener('DOMContentLoaded', () => {
                             card.parentNode.removeChild(card);
                         }
                         updateStack();
-                    }, 300);
+                    }, 500);
                 });
         };
 
         recommendCards.forEach(card => {
             const mc = new Hammer(card);
-            mc.get('pan').set({ direction: Hammer.DIRECTION_HORIZONTAL, threshold: 40 });
+            mc.get('pan').set({ direction: Hammer.DIRECTION_HORIZONTAL, threshold: 20 });
 
             mc.on('pan', e => {
-                const percentage = (100 / (stack.clientWidth / 2)) * e.deltaX;
-                const rotation = percentage * 0.2;
-                card.style.transform = `translateX(${e.deltaX}px) translateY(${e.deltaY}px) rotate(${rotation}deg)`;
+                const percentageX = e.deltaX / (stack.clientWidth / 2);
+                const rotateY = percentageX * -15;
+                const rotateZ = percentageX * 4;
+
+                card.style.transform = `translate3d(${e.deltaX}px, ${e.deltaY}px, 0) rotate3d(0, 1, 0, ${rotateY}deg) rotateZ(${rotateZ}deg)`;
+
+                const passOverlay = card.querySelector('.swipe-pass');
+                const applyOverlay = card.querySelector('.swipe-apply');
+                if (passOverlay && applyOverlay) {
+                    if (e.deltaX < 0) {
+                        passOverlay.style.opacity = Math.min(Math.abs(percentageX) * 1.5, 1);
+                    } else {
+                        applyOverlay.style.opacity = Math.min(percentageX * 1.5, 1);
+                    }
+                }
             });
 
             mc.on('panend', e => {
-                if (Math.abs(e.deltaX) > stack.clientWidth / 3) {
+                const passOverlay = card.querySelector('.swipe-pass');
+                const applyOverlay = card.querySelector('.swipe-apply');
+                if(passOverlay) passOverlay.style.opacity = 0;
+                if(applyOverlay) applyOverlay.style.opacity = 0;
+
+                if (Math.abs(e.deltaX) > stack.clientWidth / 3.5) {
                     const direction = e.deltaX > 0 ? 1 : -1;
                     const action = direction === 1 ? 'apply' : 'ignore';
                     handleAction(card, action, direction);
                 } else {
-                    card.style.transition = 'transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+                    card.classList.add('is-snapping');
                     card.style.transform = '';
-                    setTimeout(() => {
-                        card.style.transition = '';
-                    }, 400);
+
+                    card.addEventListener('transitionend', () => {
+                        card.classList.remove('is-snapping');
+                    }, { once: true });
+
+                    setTimeout(updateStack, 50);
                 }
             });
         });
@@ -235,8 +263,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const passBtn = document.getElementById('pass-btn');
         const applyBtn = document.getElementById('apply-btn');
 
-        passBtn.addEventListener('click', () => handleAction(stack.querySelector('.recommend-card:last-of-type'), 'ignore', -1));
-        applyBtn.addEventListener('click', () => handleAction(stack.querySelector('.recommend-card:last-of-type'), 'apply', 1));
+        passBtn.addEventListener('click', () => handleAction(recommendCards[recommendCards.length - 1], 'ignore', -1));
+        applyBtn.addEventListener('click', () => handleAction(recommendCards[recommendCards.length - 1], 'apply', 1));
 
         updateStack();
     }
