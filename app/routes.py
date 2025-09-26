@@ -1,8 +1,8 @@
-from flask import render_template, redirect, url_for, flash, request, jsonify
+from flask import render_template, redirect, url_for, flash, request, jsonify, session
 from app.forms import LoginForm, RegisterForm, EditProfileForm, CreatePostForm, VerifySkillForm
 from flask_login import current_user, login_user, logout_user, login_required
 from app.models import User, Profile, Skill, Post, Application, post_required_skills, ChatMessage, ChatReadStatus, \
-    ProfileSkill
+    ProfileSkill, HackathonPost
 from app import app, db, socketio
 import sqlalchemy as sa
 from werkzeug.utils import secure_filename
@@ -22,6 +22,124 @@ from PIL import Image
 import pytesseract
 import re
 from sqlalchemy import case
+from app.hackathon_scraper import HackathonScraper
+from app.models import HackathonPost
+from app.hackathon_scraper import HackathonScraper  # Make sure to import it
+from flask import render_template, jsonify
+import random  # <-- ADD THIS IMPORT
+from sqlalchemy.orm import selectinload
+# --- ADD QUIZ DATA STRUCTURE ---
+# A data structure to hold quiz questions for each category.
+# 'skill_reward' points to the skill that gets a level boost for a correct answer.
+QUIZ_DATA = {
+    'Frontend': [
+        {'question': 'What does CSS stand for?',
+         'options': ['Cascading Style Sheets', 'Creative Style System', 'Computer Style Syntax',
+                     'Colorful Style Sheets'], 'correct_answer': 0, 'skill_reward': 'css'},
+        {'question': 'Which JavaScript framework was developed by Facebook?',
+         'options': ['Angular', 'Vue', 'React', 'Svelte'], 'correct_answer': 2, 'skill_reward': 'react'},
+        {'question': 'What is the purpose of the canvas element in HTML5?',
+         'options': ['To display video', 'To draw graphics via scripting', 'To create a container for CSS',
+                     'To embed external content'], 'correct_answer': 1, 'skill_reward': 'html'},
+        {'question': 'Which of the following is NOT a JavaScript data type?',
+         'options': ['String', 'Boolean', 'Number', 'Character'], 'correct_answer': 3, 'skill_reward': 'javascript'},
+        {'question': 'How do you select an element with id "demo" in CSS?',
+         'options': ['.demo', '#demo', 'demo', '*demo'], 'correct_answer': 1, 'skill_reward': 'css'}
+    ],
+    'Backend': [
+        {'question': 'Which language is primarily used with the Django framework?',
+         'options': ['Java', 'Ruby', 'Python', 'PHP'], 'correct_answer': 2, 'skill_reward': 'python'},
+        {'question': 'What does SQL stand for?',
+         'options': ['Structured Query Language', 'Simple Question Language', 'Standardized Query Logic',
+                     'System Query Link'], 'correct_answer': 0, 'skill_reward': 'sql'},
+        {'question': 'Node.js is built on which JavaScript engine?',
+         'options': ['SpiderMonkey', 'Chakra', 'JavaScriptCore', 'V8'], 'correct_answer': 3, 'skill_reward': 'node.js'},
+        {'question': 'Which of these is a popular web server for hosting Python applications?',
+         'options': ['Apache Tomcat', 'Gunicorn', 'IIS', 'Nginx (as a web server)'], 'correct_answer': 1,
+         'skill_reward': 'python'},
+        {'question': 'In REST API architecture, what HTTP method is typically used for creating a new resource?',
+         'options': ['GET', 'POST', 'PUT', 'DELETE'], 'correct_answer': 1, 'skill_reward': 'backend'}
+    ],
+    'Database': [
+        {'question': 'What is a primary key in a database table?',
+         'options': ['A key that can contain null values', 'A unique identifier for each record',
+                     'A reference to a key in another table', 'A key used only for sorting data'], 'correct_answer': 1,
+         'skill_reward': 'sql'},
+        {'question': 'Which of the following is a popular NoSQL database?',
+         'options': ['MySQL', 'PostgreSQL', 'MongoDB', 'SQLite'], 'correct_answer': 2, 'skill_reward': 'mongodb'},
+        {'question': 'What SQL clause is used to combine rows from two or more tables?',
+         'options': ['COMBINE', 'UNION', 'JOIN', 'GROUP BY'], 'correct_answer': 2, 'skill_reward': 'sql'},
+        {'question': 'Which SQL statement is used to extract data from a database?',
+         'options': ['GET', 'EXTRACT', 'OPEN', 'SELECT'], 'correct_answer': 3, 'skill_reward': 'sql'},
+        {'question': 'In database transactions, what does the "A" in ACID stand for?',
+         'options': ['Atomicity', 'Accuracy', 'Availability', 'Authorization'], 'correct_answer': 0,
+         'skill_reward': 'database'}
+    ],
+    'DevOps': [
+        {'question': 'What is Docker used for?',
+         'options': ['Running virtual machines', 'Containerization of applications', 'Cloud storage management',
+                     'Automated testing'], 'correct_answer': 1, 'skill_reward': 'docker'},
+        {'question': 'What does CI/CD stand for?',
+         'options': ['Continuous Integration / Continuous Deployment', 'Code Integration / Code Delivery',
+                     'Continuous Intelligence / Cloud Data', 'Code Inspection / Custom Deployment'], 'correct_answer': 0,
+         'skill_reward': 'ci/cd'},
+        {'question': 'What is the primary function of Kubernetes?',
+         'options': ['To build container images', 'To orchestrate and manage containers at scale',
+                     'To write infrastructure as code', 'To monitor server logs'], 'correct_answer': 1,
+         'skill_reward': 'kubernetes'},
+        {'question': 'Which AWS service is commonly used for creating CI/CD pipelines?',
+         'options': ['AWS S3', 'AWS EC2', 'AWS Lambda', 'AWS CodePipeline'], 'correct_answer': 3,
+         'skill_reward': 'aws'},
+        {'question': 'Jenkins is a popular open-source tool primarily used for...',
+         'options': ['Version control', 'Automation and CI/CD', 'Database administration', 'Code editing'],
+         'correct_answer': 1, 'skill_reward': 'jenkins'}
+    ],
+    'Mobile': [
+        {'question': 'What is the primary programming language for native iOS development?',
+         'options': ['Java', 'Kotlin', 'Swift', 'C#'], 'correct_answer': 2, 'skill_reward': 'swift'},
+        {'question': 'Which language is now Google\'s official and preferred language for Android development?',
+         'options': ['Java', 'Kotlin', 'C++', 'Dart'], 'correct_answer': 1, 'skill_reward': 'kotlin'},
+        {'question':
+             'Which framework allows for building natively compiled applications from a single codebase for mobile, web, and desktop?',
+         'options': ['React Native', 'Xamarin', 'Flutter', 'Ionic'], 'correct_answer': 2, 'skill_reward': 'flutter'},
+        {'question': 'React Native is a mobile application framework based on which JavaScript library?',
+         'options': ['Angular', 'Vue', 'React', 'Svelte'], 'correct_answer': 2, 'skill_reward': 'react native'},
+        {'question': 'In Android development, what file format is primarily used for defining user interface layouts?',
+         'options': ['HTML', 'CSS', 'XML', 'JSON'], 'correct_answer': 2, 'skill_reward': 'android'}
+    ],
+    'Data Science': [
+        {'question': 'Which Python library is essential for data manipulation and analysis, providing the DataFrame structure?',
+         'options': ['NumPy', 'Pandas', 'Scikit-learn', 'Matplotlib'], 'correct_answer': 1, 'skill_reward': 'pandas'},
+        {'question': 'Classifying an email as "spam" or "not spam" is an example of what type of machine learning?',
+         'options': ['Regression', 'Clustering', 'Reinforcement Learning', 'Supervised Classification'],
+         'correct_answer': 3, 'skill_reward': 'machine learning'},
+        {'question': 'What is the fundamental data structure of the NumPy library?',
+         'options': ['DataFrame', 'Series', 'List', 'ndarray'], 'correct_answer': 3, 'skill_reward': 'numpy'},
+        {'question': 'TensorFlow and PyTorch are popular open-source libraries used primarily for what purpose?',
+         'options': ['Data visualization', 'Building and training neural networks', 'Web scraping',
+                     'Database management'], 'correct_answer': 1, 'skill_reward': 'tensorflow'},
+        {'question': 'Scikit-learn is a powerful Python library focused on...',
+         'options': ['Deep learning and neural networks', 'Traditional machine learning algorithms',
+                     'Natural Language Processing only', 'Computer Vision only'], 'correct_answer': 1,
+         'skill_reward': 'scikit-learn'}
+    ],
+    'Design': [
+        {'question': 'Which tool is primarily used for vector graphics?',
+         'options': ['Adobe Photoshop', 'Figma', 'GIMP', 'Procreate'], 'correct_answer': 1, 'skill_reward': 'figma'},
+        {'question': 'What does UX stand for in the context of design?',
+         'options': ['User Experience', 'User Extension', 'Universal Export', 'Utility Matrix'], 'correct_answer': 0,
+         'skill_reward': 'ux'},
+        {'question': 'A wireframe is typically...',
+         'options': ['A high-fidelity, full-color design', 'A low-fidelity, basic structural guide',
+                     'The final HTML and CSS code', 'A user testing script'], 'correct_answer': 1,
+         'skill_reward': 'prototyping'},
+        {'question': 'Which color model is used for digital screens?', 'options': ['CMYK', 'Pantone', 'RGB', 'HSL'],
+         'correct_answer': 2, 'skill_reward': 'ui'},
+        {'question': 'What is the primary purpose of Adobe XD?',
+         'options': ['Video editing', 'Photo manipulation', 'UI/UX design and prototyping', '3D modeling'],
+         'correct_answer': 2, 'skill_reward': 'adobe xd'}
+    ]
+}
 
 
 @app.context_processor
@@ -475,6 +593,35 @@ def create_post():
         flash('Your post has been created successfully!', 'success')
         return redirect(url_for('user', username=current_user.username))
     return render_template('create_post.html', title='Create a New Post', form=form)
+# --- (Existing code from routes.py, ensure it's here) ...
+
+
+@app.route('/hackathons')
+@login_required
+def hackathons():
+    # Simplified query: Just fetch all hackathon posts and order them.
+    posts = db.session.scalars(
+        sa.select(HackathonPost).order_by(HackathonPost.date_posted.desc())
+    ).all()
+    return render_template('hackathons.html', posts=posts, title='Hackathons')
+
+
+@app.route('/scrape_hackathons', methods=['POST',"GET"])
+@login_required
+def scrape_hackathons():
+    if not current_user.is_authenticated:
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+    try:
+        scraper = HackathonScraper()
+        count = scraper.create_posts_from_hackathons()
+        message = f"Scraping complete. Found and added {count} new hackathons."
+        return jsonify({'success': True, 'message': message})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# --- (The rest of your existing routes.py code should follow) ...
+# NOTE: The create, join, and leave hackathon team routes have been removed.
+
 
 
 @app.route('/apply/<int:post_id>', methods=['POST'])
@@ -603,6 +750,8 @@ def handle_invitation(application_id, action):
     return redirect(url_for('dashboard'))
 
 
+# In app/routes.py
+
 @app.route('/leaderboard')
 @login_required
 def leaderboard():
@@ -633,11 +782,97 @@ def leaderboard():
             .order_by(sa.desc(subquery.c.total_score)) \
             .limit(50)
         ranked_users = db.session.execute(ranked_users_query).all()
+
+    # --- MODIFIED LINES ---
     return render_template('leaderboard.html',
                            title='Leaderboard',
                            ranked_users=ranked_users,
-                           categories=SKILL_CATEGORIES.keys(),
-                           active_category=active_category)
+                           categories=list(SKILL_CATEGORIES.keys()),  # FIX 1: Convert dict_keys to a list
+                           active_category=active_category,
+                           QUIZ_DATA=QUIZ_DATA)  # FIX 2: Pass QUIZ_DATA to the template
+
+
+# --- ADD QUIZ API ENDPOINTS ---
+
+@app.route('/api/quiz/<category>')
+@login_required
+def get_quiz(category):
+    """
+    Provides a set of questions for a given skill category.
+    The full question data (including answers) is stored in the user's session
+    to prevent cheating by inspecting client-side code.
+    """
+    if category not in QUIZ_DATA:
+        return jsonify({'error': 'Quiz not found for this category'}), 404
+
+    all_questions = QUIZ_DATA[category]
+    # Select a random sample of 5 questions, or fewer if not enough are available
+    questions_to_send = random.sample(all_questions, min(5, len(all_questions)))
+
+    # Store the full question data in the session for later verification
+    session['current_quiz'] = questions_to_send
+
+    # Prepare a "safe" version of the questions to send to the client (without answers)
+    client_safe_questions = [
+        {'question': q['question'], 'options': q['options']}
+        for q in questions_to_send
+    ]
+    return jsonify(client_safe_questions)
+
+
+@app.route('/api/quiz/submit', methods=['POST'])
+@login_required
+def submit_quiz():
+    """
+    Receives quiz answers, checks them against the data stored in the session,
+    calculates the score, and applies a skill level reward if the score is high enough.
+    """
+    data = request.get_json()
+    user_answers = data.get('answers')
+    quiz_questions = session.get('current_quiz')
+
+    if not user_answers or not quiz_questions or len(user_answers) != len(quiz_questions):
+        return jsonify({'error': 'Invalid or expired quiz submission.'}), 400
+
+    score = 0
+    correctly_answered_skills = []
+    for i, question in enumerate(quiz_questions):
+        # Ensure user_answers[i] is a valid index before comparing
+        if user_answers[i] is not None and user_answers[i] == question['correct_answer']:
+            score += 1
+            correctly_answered_skills.append(question['skill_reward'])
+
+    total_questions = len(quiz_questions)
+    percentage = (score / total_questions) * 100
+    reward_message = ""
+
+    # Reward logic: If score is 60% or higher, grant skill level points
+    if percentage >= 60:
+        unique_skills_to_update = set(correctly_answered_skills)
+        updated_count = 0
+        for skill_name in unique_skills_to_update:
+            # Find the association between the current user's profile and the skill
+            assoc = db.session.scalar(sa.select(ProfileSkill).join(Skill).where(
+                ProfileSkill.profile_id == current_user.profile.id,
+                Skill.name.ilike(skill_name)
+            ))
+            # If the user has this skill on their profile, increment its level
+            if assoc:
+                assoc.level += 1
+                updated_count += 1
+
+        if updated_count > 0:
+            db.session.commit()
+            reward_message = f"Excellent! Your level in {updated_count} skill(s) has increased. The leaderboard will update shortly."
+
+    session.pop('current_quiz', None)  # Clear the quiz data from the session
+    return jsonify({
+        'success': True,
+        'score': score,
+        'total': total_questions,
+        'message': f"You scored {score} out of {total_questions}.",
+        'reward_message': reward_message
+    })
 
 
 def recommend_users_for_post(post, limit=5):

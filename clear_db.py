@@ -1,36 +1,24 @@
-import sys
-import os
+import sqlite3
 
-sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+# --- Replace with your SQLite database file ---
+db_path = "app.db"   # Example: 'instance/app.db' if using Flask default
 
-from app import app, db
+try:
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
 
-def clear_database_records():
-    print("Connecting to the database...")
-    with app.app_context():
-        try:
-            print("Starting transaction to clear all records...")
-            for table in reversed(db.metadata.sorted_tables):
-                print(f"  - Deleting records from: {table.name}")
-                db.session.execute(table.delete())
+    # Delete all rows from the table
+    cursor.execute("DELETE FROM hackathon_post;")
+    conn.commit()
 
-            db.session.commit()
-            print("\nSuccess! All records have been deleted. Table structures remain intact.")
+    print("All posts deleted from hackathon_post.")
 
-        except Exception as e:
-            print(f"\nAn error occurred: {e}")
-            print("Rolling back transaction.")
-            db.session.rollback()
-        finally:
-            print("Process finished.")
+    # If you also want to reset AUTOINCREMENT (IDs start from 1 again):
+    cursor.execute("DELETE FROM sqlite_sequence WHERE name='hackathon_post';")
+    conn.commit()
 
-if __name__ == '__main__':
-    confirmation = input(
-        "This will delete ALL RECORDS from the database without deleting the tables.\n"
-        " This action cannot be undone. Are you sure? (Type 'yes' to confirm): "
-    )
-    if confirmation.lower() == 'yes':
-        clear_database_records()
-    else:
-        print("Operation cancelled.")
+except sqlite3.Error as e:
+    print("Error:", e)
 
+finally:
+    conn.close()

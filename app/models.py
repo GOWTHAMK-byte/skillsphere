@@ -30,31 +30,22 @@ class ProfileSkill(db.Model):
     __tablename__ = 'profile_skill'
     profile_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey('profile.id'), primary_key=True)
     skill_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey('skill.id'), primary_key=True)
-
     level: so.Mapped[int] = so.mapped_column(sa.Integer, default=1)
     is_verified: so.Mapped[bool] = so.mapped_column(sa.Boolean, default=False)
     proof_link: so.Mapped[Optional[str]] = so.mapped_column(sa.String(255))
-
     profile: so.Mapped['Profile'] = so.relationship(back_populates='skill_associations')
     skill: so.Mapped['Skill'] = so.relationship(back_populates='profile_associations')
 
 
 class User(db.Model, UserMixin):
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
-    username: so.Mapped[str] = so.mapped_column(sa.String(64), index=True,
-                                                unique=True)
-    email: so.Mapped[str] = so.mapped_column(sa.String(120), index=True,
-                                             unique=True)
+    username: so.Mapped[str] = so.mapped_column(sa.String(64), index=True, unique=True)
+    email: so.Mapped[str] = so.mapped_column(sa.String(120), index=True, unique=True)
     password_hash: so.Mapped[Optional[str]] = so.mapped_column(sa.String(256))
-
-    profile: so.Mapped['Profile'] = so.relationship(
-        back_populates='user', cascade='all, delete-orphan')
-    posts: so.Mapped[List['Post']] = so.relationship(
-        back_populates='creator', cascade='all, delete-orphan')
-    applications: so.Mapped[List['Application']] = so.relationship(
-        back_populates='applicant', cascade='all, delete-orphan')
-    teams: so.Mapped[List['Post']] = so.relationship(
-        secondary=post_teammates, back_populates='teammates')
+    profile: so.Mapped['Profile'] = so.relationship(back_populates='user', cascade='all, delete-orphan')
+    posts: so.Mapped[List['Post']] = so.relationship(back_populates='creator', cascade='all, delete-orphan')
+    applications: so.Mapped[List['Application']] = so.relationship(back_populates='applicant', cascade='all, delete-orphan')
+    teams: so.Mapped[List['Post']] = so.relationship(secondary=post_teammates, back_populates='teammates')
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -71,7 +62,6 @@ class Profile(db.Model):
     name: so.Mapped[Optional[str]] = so.mapped_column(sa.String(100))
     bio: so.Mapped[Optional[str]] = so.mapped_column(sa.String(500))
     user_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey('user.id'), index=True)
-
     college: so.Mapped[Optional[str]] = so.mapped_column(sa.String(200))
     year: so.Mapped[Optional[str]] = so.mapped_column(sa.String(50))
     degree: so.Mapped[Optional[str]] = so.mapped_column(sa.String(100))
@@ -80,9 +70,7 @@ class Profile(db.Model):
     resume_file: so.Mapped[Optional[str]] = so.mapped_column(sa.String(255))
     avatar_filename: so.Mapped[Optional[str]] = so.mapped_column(sa.String(255))
     gender: so.Mapped[Optional[str]] = so.mapped_column(sa.String(20))
-
     user: so.Mapped['User'] = so.relationship(back_populates='profile')
-
     location: so.Mapped[Optional[str]] = so.mapped_column(sa.String(150))
     latitude: so.Mapped[Optional[float]] = so.mapped_column(sa.Float)
     longitude: so.Mapped[Optional[float]] = so.mapped_column(sa.Float)
@@ -94,7 +82,7 @@ class Profile(db.Model):
         if self.avatar_filename:
             return url_for('static', filename=f'avatars/{self.avatar_filename}')
         else:
-            return url_for('static', filename='avatars/default.png')
+            return f"https://api.dicebear.com/8.x/initials/svg?seed={self.user.username}"
 
     @property
     def skills(self) -> List['Skill']:
@@ -107,10 +95,8 @@ class Profile(db.Model):
 class Skill(db.Model):
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
     name: so.Mapped[str] = so.mapped_column(sa.String(50), unique=True, index=True)
-
     profile_associations: so.Mapped[List['ProfileSkill']] = so.relationship(
         back_populates='skill', cascade="all, delete-orphan")
-
     required_by_posts: so.Mapped[List['Post']] = so.relationship(
         secondary=post_required_skills, back_populates='required_skills')
 
@@ -128,8 +114,6 @@ class Post(db.Model):
     event_poster_filename: so.Mapped[Optional[str]] = so.mapped_column(sa.String(255))
     event_type: so.Mapped[Optional[str]] = so.mapped_column(sa.String(50))
     event_datetime: so.Mapped[Optional[datetime]] = so.mapped_column(sa.DateTime)
-    # --- REMOVED ---
-    # event_venue: so.Mapped[Optional[str]] = so.mapped_column(sa.String(200))
     timestamp: so.Mapped[datetime] = so.mapped_column(
         index=True, default=lambda: datetime.now(timezone.utc))
     creator_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey('user.id'), index=True)
@@ -160,7 +144,6 @@ class Application(db.Model):
     timestamp: so.Mapped[datetime] = so.mapped_column(
         index=True, default=lambda: datetime.now(timezone.utc))
     notified: so.Mapped[bool] = so.mapped_column(sa.Boolean, default=False)
-
     post: so.Mapped['Post'] = so.relationship(back_populates='applications')
     applicant: so.Mapped['User'] = so.relationship(back_populates='applications')
 
@@ -174,7 +157,6 @@ class ChatMessage(db.Model):
     sender_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey('user.id'), index=True)
     content: so.Mapped[str] = so.mapped_column(sa.Text)
     timestamp: so.Mapped[datetime] = so.mapped_column(index=True, default=lambda: datetime.now(timezone.utc))
-
     post: so.Mapped['Post'] = so.relationship()
     sender: so.Mapped['User'] = so.relationship()
 
@@ -184,6 +166,17 @@ class ChatReadStatus(db.Model):
     user_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey('user.id'), index=True)
     post_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey('post.id'), index=True)
     last_read: so.Mapped[datetime] = so.mapped_column(default=lambda: datetime.now(timezone.utc))
-
     user: so.Mapped['User'] = so.relationship()
     post: so.Mapped['Post'] = so.relationship()
+
+
+class HackathonPost(db.Model):
+    id: so.Mapped[int] = so.mapped_column(primary_key=True)
+    title: so.Mapped[str] = so.mapped_column(sa.String(150))
+    description: so.Mapped[Optional[str]] = so.mapped_column(sa.Text)
+    date_posted: so.Mapped[datetime] = so.mapped_column(
+        index=True, default=lambda: datetime.now(timezone.utc))
+
+    def __repr__(self):
+        return f'<HackathonPost {self.title}>'
+

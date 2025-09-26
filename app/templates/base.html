@@ -75,6 +75,28 @@
         .tagify__tag > div::before {
             background: linear-gradient(45deg, rgba(255,255,255,0.3), transparent);
         }
+
+        /* MODIFICATION START: Chatbot Styles */
+        #chatbot-messages::-webkit-scrollbar { width: 6px; }
+        #chatbot-messages::-webkit-scrollbar-track { background: #1e1b4b; }
+        #chatbot-messages::-webkit-scrollbar-thumb { background: #4338ca; border-radius: 3px; }
+
+        .bot-message .chat-bubble {
+            background-color: #312e81;
+            color: #e0e7ff;
+        }
+
+        .user-message .chat-bubble {
+            background-color: #5b21b6;
+            color: #f5f3ff;
+        }
+
+        #chatbot-window.is-open {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+        /* MODIFICATION END: Chatbot Styles */
     </style>
 </head>
 <body class="min-h-screen font-sans antialiased overflow-x-hidden text-neutral-200">
@@ -98,6 +120,10 @@
                 </a>
 
                 <a href="{{ url_for('leaderboard') }}" class="text-neutral-300 hover:text-white font-medium nav-link focus-ring" aria-label="Leaderboard">Leaderboard</a>
+
+                <!-- START: New Hackathons Button -->
+                <a href="{{ url_for('hackathons') }}" class="text-neutral-300 hover:text-white font-medium nav-link focus-ring" aria-label="Hackathons">Hackathons</a>
+                <!-- END: New Hackathons Button -->
 
                 {% if current_user.is_authenticated %}
                 <a href="{{ url_for('messages') }}" class="text-neutral-300 hover:text-white font-medium transition relative p-2 rounded-full hover:bg-violet-900/50 focus-ring" title="Messages" aria-label="View Messages">
@@ -148,6 +174,35 @@
         </div>
     </main>
 
+    <div id="chatbot-container" class="fixed bottom-5 right-5 z-[100] flex flex-col items-end">
+        <div id="chatbot-window" class="w-80 h-[28rem] bg-slate-900/80 backdrop-blur-xl border border-violet-700/50 rounded-2xl shadow-2xl flex flex-col transition-all duration-300 transform-gpu opacity-0 translate-y-4 pointer-events-none mb-4">
+            <div class="flex items-center justify-between p-3 border-b border-violet-800/60 flex-shrink-0">
+                <div class="flex items-center gap-2">
+                    <span class="relative flex h-3 w-3">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                    </span>
+                    <h3 class="font-bold text-violet-200">SkillSphere Assistant</h3>
+                </div>
+                <button id="chatbot-close-btn" class="text-violet-400 text-2xl leading-none hover:text-white">&times;</button>
+            </div>
+            <div id="chatbot-messages" class="flex-grow p-4 overflow-y-auto space-y-4">
+                <div id="typing-indicator" class="hidden bot-message">
+                    <div class="chat-bubble flex items-center justify-center gap-1.5 p-3">
+                        <span class="w-2 h-2 bg-violet-400 rounded-full animate-bounce" style="animation-delay: -0.3s;"></span>
+                        <span class="w-2 h-2 bg-violet-400 rounded-full animate-bounce" style="animation-delay: -0.15s;"></span>
+                        <span class="w-2 h-2 bg-violet-400 rounded-full animate-bounce"></span>
+                    </div>
+                </div>
+            </div>
+            <div id="chatbot-actions" class="p-2 border-t border-violet-800/60 flex-shrink-0 space-y-2">
+                </div>
+        </div>
+        <button id="chatbot-launcher" class="w-16 h-16 bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-full flex items-center justify-center shadow-lg transform transition-all hover:scale-110 hover:shadow-fuchsia-500/40 focus-ring" aria-label="Open Chatbot">
+             <svg id="chat-icon-open" class="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+             <svg id="chat-icon-close" class="w-8 h-8 text-white hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+    </div>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/tsparticles-slim@2.12.0/tsparticles.slim.bundle.min.js"></script>
 
@@ -228,6 +283,116 @@
         },
         retina_detect: true,
       });
+
+      // MODIFICATION START: Chatbot JavaScript Logic
+      const chatbotLauncher = document.getElementById('chatbot-launcher');
+      const chatbotWindow = document.getElementById('chatbot-window');
+      const chatbotCloseBtn = document.getElementById('chatbot-close-btn');
+      const chatbotMessages = document.getElementById('chatbot-messages');
+      const chatbotActions = document.getElementById('chatbot-actions');
+      const openIcon = document.getElementById('chat-icon-open');
+      const closeIcon = document.getElementById('chat-icon-close');
+      const typingIndicator = document.getElementById('typing-indicator');
+
+      const chatLogic = {
+        main: {
+            message: "Hi there! 👋 I'm the SkillSphere Assistant. How can I help you today?",
+            actions: [
+                { text: "What is SkillSphere?", next: "about" },
+                { text: "How do I find a team?", next: "findTeam" },
+                { text: "Tell me about recommendations", next: "recommendations" },
+                { text: "How does the leaderboard work?", next: "leaderboard" }
+            ]
+        },
+        about: {
+            message: "SkillSphere is a platform designed to help you find teammates for hackathons, projects, and competitions. You can create posts to recruit members, or apply to join existing teams!",
+            actions: [{ text: "⬅️ Back to main menu", next: "main" }]
+        },
+        findTeam: {
+            message: "Easy! You can browse the 'All Posts' tab, check your personalized 'Recommended For You' feed, or use the search bar to find projects that match your interests.",
+            actions: [{ text: "⬅️ Back to main menu", next: "main" }]
+        },
+        recommendations: {
+            message: "Our system analyzes your skills, past projects, and even your location to suggest posts where you'd be a great fit. The more you use the site, the better your recommendations get!",
+            actions: [{ text: "⬅️ Back to main menu", next: "main" }]
+        },
+        leaderboard: {
+            message: "You can improve your rank by adding skills to your profile, getting them verified by completing projects, and acing the skill quizzes. Good luck! 🏆",
+            actions: [{ text: "⬅️ Back to main menu", next: "main" }]
+        }
+      };
+
+      const toggleChatbot = () => {
+        const isOpen = chatbotWindow.classList.toggle('is-open');
+        openIcon.classList.toggle('hidden', isOpen);
+        closeIcon.classList.toggle('hidden', !isOpen);
+      };
+
+      const appendMessage = (text, sender) => {
+        const messageWrapper = document.createElement('div');
+        messageWrapper.className = `w-full flex ${sender === 'user' ? 'justify-end' : 'justify-start'}`;
+
+        const messageBubble = document.createElement('div');
+        messageBubble.className = `chat-bubble max-w-[85%] rounded-2xl px-4 py-2 text-sm`;
+        messageBubble.textContent = text;
+
+        const wrapperClass = sender === 'user' ? 'user-message' : 'bot-message';
+        messageWrapper.classList.add(wrapperClass);
+
+        messageWrapper.appendChild(messageBubble);
+        chatbotMessages.insertBefore(messageWrapper, typingIndicator); // Insert before the indicator
+        chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+      };
+
+      const processChoice = (key) => {
+        const choice = chatLogic[key];
+        if (!choice) return;
+
+        // NEW: Show typing indicator
+        typingIndicator.classList.remove('hidden');
+        chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+
+        // NEW: Calculate dynamic delay based on message length
+        const typingDelay = Math.min(Math.max(choice.message.length * 25, 600), 2500);
+
+        setTimeout(() => {
+            // NEW: Hide typing indicator
+            typingIndicator.classList.add('hidden');
+
+            appendMessage(choice.message, 'bot');
+            renderActions(choice.actions);
+        }, typingDelay);
+      };
+
+      const renderActions = (actions) => {
+        chatbotActions.innerHTML = '';
+        actions.forEach(action => {
+            const button = document.createElement('button');
+            button.className = "w-full text-left text-sm p-2 rounded-md bg-violet-800/50 hover:bg-violet-800/90 text-violet-200 transition-colors";
+            button.textContent = action.text;
+            button.dataset.next = action.next;
+            chatbotActions.appendChild(button);
+        });
+      };
+
+      chatbotActions.addEventListener('click', (e) => {
+          if (e.target.tagName === 'BUTTON') {
+              const nextKey = e.target.dataset.next;
+              appendMessage(e.target.textContent, 'user');
+              // NEW: Clear actions immediately, don't show static text
+              chatbotActions.innerHTML = '';
+              processChoice(nextKey);
+          }
+      });
+
+      chatbotLauncher.addEventListener('click', toggleChatbot);
+      chatbotCloseBtn.addEventListener('click', toggleChatbot);
+
+      // Initial state - start with a dynamic welcome
+      const initialWelcome = chatLogic['main'];
+      appendMessage(initialWelcome.message, 'bot');
+      renderActions(initialWelcome.actions);
+      // MODIFICATION END: Chatbot JavaScript Logic
     });
     </script>
 

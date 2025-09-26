@@ -28,7 +28,7 @@
         <p class="mt-4 text-lg text-violet-300/80">See who's at the top of their game. Ranks are based on skill level and verifications.</p>
     </div>
 
-    <div class="mb-12 border-b border-violet-900/60">
+    <div class="mb-8 border-b border-violet-900/60">
         <nav class="-mb-px flex flex-wrap justify-center space-x-4 md:space-x-6" aria-label="Tabs">
             {% for category in categories %}
             <a href="{{ url_for('leaderboard', category=category) }}"
@@ -43,6 +43,14 @@
             {% endfor %}
         </nav>
     </div>
+
+    <div class="text-center mb-12">
+        <button id="start-quiz-btn"
+                class="bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105 disabled:bg-sky-800 disabled:cursor-not-allowed disabled:transform-none">
+            Take a {{ active_category }} Skill Quiz!
+        </button>
+    </div>
+
 
     {% if ranked_users %}
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-4 items-end mb-12">
@@ -113,4 +121,170 @@
         </div>
     {% endif %}
 </div>
+
+<div id="quiz-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+    <div class="bg-slate-900 border border-violet-700 rounded-2xl shadow-xl w-full max-w-2xl p-6 md:p-8 relative transform transition-all scale-95 opacity-0" id="quiz-modal-content">
+        <div id="quiz-loading" class="text-center">
+            <p class="text-lg text-violet-300">Loading Quiz...</p>
+        </div>
+
+        <div id="quiz-view" class="hidden">
+            <h2 class="text-3xl font-bold text-sky-400 mb-6" id="quiz-title">{{ active_category }} Quiz</h2>
+            <div id="quiz-questions-container" class="space-y-6 max-h-[60vh] overflow-y-auto pr-2">
+                </div>
+            <div class="mt-8 flex justify-between items-center">
+                <button id="quiz-close-btn" class="text-violet-300 hover:text-white transition-colors">Close</button>
+                <button id="quiz-submit-btn" class="bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-5 rounded-lg transition-transform transform hover:scale-105">Submit Answers</button>
+            </div>
+        </div>
+
+        <div id="quiz-result-view" class="hidden text-center">
+             <h2 class="text-3xl font-bold text-yellow-400 mb-4">Quiz Complete!</h2>
+             <p id="quiz-result-message" class="text-xl text-violet-200"></p>
+             <p id="quiz-reward-message" class="text-md text-teal-300 mt-3"></p>
+             <button id="quiz-done-btn" class="mt-8 bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-5 rounded-lg transition-transform transform hover:scale-105">Done</button>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const startQuizBtn = document.getElementById('start-quiz-btn');
+    const quizModal = document.getElementById('quiz-modal');
+    const quizModalContent = document.getElementById('quiz-modal-content');
+    const closeBtn = document.getElementById('quiz-close-btn');
+    const submitBtn = document.getElementById('quiz-submit-btn');
+    const doneBtn = document.getElementById('quiz-done-btn');
+
+    const loadingView = document.getElementById('quiz-loading');
+    const quizView = document.getElementById('quiz-view');
+    const resultView = document.getElementById('quiz-result-view');
+    const questionsContainer = document.getElementById('quiz-questions-container');
+
+    const activeCategory = "{{ active_category }}";
+
+    function showModal() {
+        quizModal.classList.remove('hidden');
+        setTimeout(() => {
+            quizModalContent.classList.remove('scale-95', 'opacity-0');
+        }, 10);
+    }
+
+    function hideModal() {
+        quizModalContent.classList.add('scale-95', 'opacity-0');
+        setTimeout(() => {
+            quizModal.classList.add('hidden');
+            // Reset modal state for next time
+            loadingView.style.display = 'block';
+            quizView.classList.add('hidden');
+            resultView.classList.add('hidden');
+        }, 300);
+    }
+
+    startQuizBtn.addEventListener('click', async () => {
+        showModal();
+        startQuizBtn.disabled = true;
+        startQuizBtn.textContent = 'Loading...';
+
+        try {
+            const response = await fetch(`/api/quiz/${activeCategory}`);
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to load quiz');
+            }
+            const questions = await response.json();
+
+            if (questions.length === 0) {
+                 throw new Error('No questions available for this category yet.');
+            }
+
+            displayQuestions(questions);
+
+            loadingView.style.display = 'none';
+            quizView.classList.remove('hidden');
+
+        } catch (error) {
+            console.error(error);
+            loadingView.innerHTML = `<p class="text-red-400">Error: ${error.message}</p>`;
+            setTimeout(hideModal, 3000); // Close modal after showing error
+        } finally {
+            startQuizBtn.disabled = false;
+            startQuizBtn.textContent = `Take a ${activeCategory} Skill Quiz!`;
+        }
+    });
+
+    function displayQuestions(questions) {
+        questionsContainer.innerHTML = '';
+        questions.forEach((q, index) => {
+            const questionEl = document.createElement('div');
+            questionEl.classList.add('border-b', 'border-violet-800/50', 'pb-4');
+            questionEl.innerHTML = `
+                <p class="font-semibold text-violet-200 mb-3">${index + 1}. ${q.question}</p>
+                <div class="space-y-2">
+                    ${q.options.map((opt, i) => `
+                        <div>
+                            <label class="flex items-center p-3 rounded-lg bg-slate-800/50 hover:bg-slate-800/80 cursor-pointer transition-colors">
+                                <input type="radio" name="question-${index}" value="${i}" class="form-radio h-5 w-5 text-sky-500 bg-slate-700 border-slate-600 focus:ring-sky-500">
+                                <span class="ml-3 text-violet-300">${opt}</span>
+                            </label>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            questionsContainer.appendChild(questionEl);
+        });
+    }
+
+    submitBtn.addEventListener('click', async () => {
+        const answers = [];
+        const questionCount = questionsContainer.children.length;
+
+        for (let i = 0; i < questionCount; i++) {
+            const selected = document.querySelector(`input[name="question-${i}"]:checked`);
+            answers.push(selected ? parseInt(selected.value) : null); // Use null for unanswered
+        }
+
+        if (answers.includes(null)) {
+            alert('Please answer all questions before submitting.');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/quiz/submit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ answers: answers })
+            });
+            const result = await response.json();
+
+            if (result.success) {
+                document.getElementById('quiz-result-message').textContent = result.message;
+                document.getElementById('quiz-reward-message').textContent = result.reward_message;
+                quizView.classList.add('hidden');
+                resultView.classList.remove('hidden');
+            } else {
+                alert('Error submitting quiz: ' + result.error);
+            }
+
+        } catch (error) {
+            console.error('Submission error:', error);
+            alert('An error occurred while submitting. Please try again.');
+        }
+    });
+
+    closeBtn.addEventListener('click', hideModal);
+    doneBtn.addEventListener('click', () => {
+        // Reload the page to show updated leaderboard scores
+        window.location.reload();
+    });
+
+    // Check if a quiz exists for the current category and disable the button if not
+    const availableQuizzes = {{ categories|tojson }};
+    const quizDataKeys = Object.keys({{ QUIZ_DATA|default({})|tojson }});
+    if (!quizDataKeys.includes(activeCategory)) {
+        startQuizBtn.disabled = true;
+        startQuizBtn.textContent = 'No Quiz Available';
+    }
+});
+</script>
 {% endblock %}

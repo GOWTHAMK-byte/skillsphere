@@ -6,6 +6,11 @@ from flask_login import LoginManager
 from flask_socketio import SocketIO
 import sqlalchemy as sa
 
+# --- ADD THESE TWO LINES AT THE TOP ---
+from dotenv import load_dotenv
+load_dotenv()
+# ------------------------------------
+
 app = Flask(__name__)
 app.config.from_object(Config)
 db = SQLAlchemy(app)
