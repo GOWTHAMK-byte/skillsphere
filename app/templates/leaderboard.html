@@ -16,6 +16,15 @@
             transform: translateY(0);
         }
     }
+
+    /* Animation for question entry - reuses fade-in-up from index.html via base.html */
+    @keyframes fade-in-up {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in-up {
+        animation: fade-in-up 0.5s cubic-bezier(0.215, 0.610, 0.355, 1.000) both;
+    }
 </style>
 {% endblock %}
 
@@ -64,7 +73,7 @@
                     </div>
                     <h3 class="text-xl font-bold text-violet-100 truncate hover:underline"><a href="{{ url_for('user', username=user.username) }}">{{ user.username }}</a></h3>
                     <p class="text-3xl font-extrabold text-slate-300 mt-2">{{ score }}</p>
-                    <p class="text-sm font-semibold text-slate-400 uppercase">Score</p>
+                    <p class="text-sm font-semibold text-slate-400 uppercase tracking-wider">Silver Tier</p>
                 </div>
                 {% elif rank == 1 %}
                 <div class="stagger-item text-center p-8 bg-gradient-to-br from-slate-800 to-yellow-900/40 border-2 border-yellow-400 rounded-2xl shadow-2xl shadow-yellow-500/20 md:order-2 md:-translate-y-4" style="--stagger-delay: 0ms;">
@@ -75,7 +84,7 @@
                     </div>
                     <h3 class="text-2xl font-bold text-violet-100 truncate hover:underline mt-4"><a href="{{ url_for('user', username=user.username) }}">{{ user.username }}</a></h3>
                     <p class="text-4xl font-extrabold text-yellow-300 mt-2">{{ score }}</p>
-                    <p class="text-sm font-semibold text-yellow-400 uppercase">Score</p>
+                    <p class="text-sm font-semibold text-yellow-400 uppercase tracking-wider">Gold Tier</p>
                 </div>
                 {% elif rank == 3 %}
                 <div class="stagger-item text-center p-6 bg-gradient-to-br from-slate-800 to-amber-900/40 border-2 border-amber-600 rounded-2xl shadow-2xl shadow-amber-500/10 md:order-3" style="--stagger-delay: 200ms;">
@@ -85,34 +94,68 @@
                     </div>
                     <h3 class="text-xl font-bold text-violet-100 truncate hover:underline"><a href="{{ url_for('user', username=user.username) }}">{{ user.username }}</a></h3>
                     <p class="text-3xl font-extrabold text-amber-400 mt-2">{{ score }}</p>
-                    <p class="text-sm font-semibold text-amber-500 uppercase">Score</p>
+                    <p class="text-sm font-semibold text-amber-500 uppercase tracking-wider">Bronze Tier</p>
                 </div>
                 {% endif %}
             {% endfor %}
         </div>
 
-        <div class="space-y-3">
-            {% for user, score in ranked_users[3:] %}
-            <div class="stagger-item bg-black/30 backdrop-blur-md border border-violet-900/60 rounded-xl p-4 transition-all duration-300 hover:border-violet-700/80 hover:bg-slate-800/20" style="--stagger-delay: {{ 300 + (loop.index0 * 50) }}ms;">
-                <div class="flex items-center gap-4">
-                    <div class="text-lg font-bold text-violet-300 w-10 text-center flex-shrink-0">
-                        #{{ loop.index + 3 }}
-                    </div>
-                    <a href="{{ url_for('user', username=user.username) }}" class="flex-shrink-0">
-                        <img src="{{ user.profile.avatar_url }}" alt="{{ user.username }}'s avatar" class="w-12 h-12 rounded-full object-cover border-2 border-violet-800/50">
-                    </a>
-                    <div class="flex-1 min-w-0">
-                        <a href="{{ url_for('user', username=user.username) }}" class="font-bold text-violet-100 hover:underline truncate">{{ user.username }}</a>
-                        <p class="text-sm text-violet-400 truncate">{{ user.profile.bio|truncate(60) if user.profile.bio else 'No bio provided.' }}</p>
-                    </div>
-                    <div class="text-right flex-shrink-0">
-                        <div class="text-lg font-bold text-sky-300">{{ score }}</div>
-                        <div class="text-xs text-violet-400 uppercase">Score</div>
+        {% if ranked_users|length > 3 %}
+            <div class="text-center my-10 pt-4">
+                <h2 class="text-2xl font-bold text-amber-500/90">Bronze Tier</h2>
+                <p class="text-violet-400 text-sm">Ranks 4 to 10</p>
+            </div>
+            <div class="space-y-3">
+                {% for user, score in ranked_users[3:10] %}
+                <div class="stagger-item bg-black/30 backdrop-blur-md border-2 border-amber-800/60 rounded-xl p-4 transition-all duration-300 hover:border-amber-600/80 hover:bg-slate-800/20" style="--stagger-delay: {{ 300 + (loop.index0 * 50) }}ms;">
+                    <div class="flex items-center gap-4">
+                        <div class="text-lg font-bold text-amber-300/80 w-10 text-center flex-shrink-0">
+                            #{{ loop.index + 3 }}
+                        </div>
+                        <a href="{{ url_for('user', username=user.username) }}" class="flex-shrink-0">
+                            <img src="{{ user.profile.avatar_url }}" alt="{{ user.username }}'s avatar" class="w-12 h-12 rounded-full object-cover border-2 border-amber-800/50">
+                        </a>
+                        <div class="flex-1 min-w-0">
+                            <a href="{{ url_for('user', username=user.username) }}" class="font-bold text-violet-100 hover:underline truncate">{{ user.username }}</a>
+                            <p class="text-sm text-violet-400 truncate">{{ user.profile.bio|truncate(60) if user.profile.bio else 'No bio provided.' }}</p>
+                        </div>
+                        <div class="text-right flex-shrink-0">
+                            <div class="text-lg font-bold text-sky-300">{{ score }}</div>
+                            <div class="text-xs text-violet-400 uppercase">Score</div>
+                        </div>
                     </div>
                 </div>
+                {% endfor %}
             </div>
-            {% endfor %}
-        </div>
+        {% endif %}
+
+        {% if ranked_users|length > 10 %}
+            <div class="text-center my-10 pt-6 border-t border-violet-900/60">
+                <h2 class="text-xl font-semibold text-violet-300">All Participants</h2>
+            </div>
+            <div class="space-y-3">
+                {% for user, score in ranked_users[10:] %}
+                <div class="stagger-item bg-black/30 backdrop-blur-md border border-violet-900/60 rounded-xl p-4 transition-all duration-300 hover:border-violet-700/80 hover:bg-slate-800/20" style="--stagger-delay: {{ 300 + ( (loop.index0 + 7) * 50) }}ms;">
+                    <div class="flex items-center gap-4">
+                        <div class="text-lg font-bold text-violet-300 w-10 text-center flex-shrink-0">
+                            #{{ loop.index + 10 }}
+                        </div>
+                        <a href="{{ url_for('user', username=user.username) }}" class="flex-shrink-0">
+                            <img src="{{ user.profile.avatar_url }}" alt="{{ user.username }}'s avatar" class="w-12 h-12 rounded-full object-cover border-2 border-violet-800/50">
+                        </a>
+                        <div class="flex-1 min-w-0">
+                            <a href="{{ url_for('user', username=user.username) }}" class="font-bold text-violet-100 hover:underline truncate">{{ user.username }}</a>
+                            <p class="text-sm text-violet-400 truncate">{{ user.profile.bio|truncate(60) if user.profile.bio else 'No bio provided.' }}</p>
+                        </div>
+                        <div class="text-right flex-shrink-0">
+                            <div class="text-lg font-bold text-sky-300">{{ score }}</div>
+                            <div class="text-xs text-violet-400 uppercase">Score</div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% endif %}
     {% else %}
         <div class="bg-black/20 border-2 border-dashed border-violet-900/60 rounded-xl p-12 text-center mt-8">
             <svg class="mx-auto h-12 w-12 text-violet-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
@@ -129,13 +172,24 @@
         </div>
 
         <div id="quiz-view" class="hidden">
-            <h2 class="text-3xl font-bold text-sky-400 mb-6" id="quiz-title">{{ active_category }} Quiz</h2>
+            <h2 class="text-3xl font-bold text-sky-400 mb-4" id="quiz-title">{{ active_category }} Quiz</h2>
+
+            <div class="mb-6">
+                <div class="text-sm font-semibold text-violet-300 mb-1 flex justify-between">
+                    <span>Question <span id="current-question-index">1</span> of <span id="total-questions-count">5</span></span>
+                    <span id="quiz-progress-percent">20%</span>
+                </div>
+                <div class="w-full bg-violet-800/50 rounded-full h-2.5">
+                    <div id="quiz-progress-bar" class="bg-sky-500 h-2.5 rounded-full transition-all duration-500 ease-out" style="width: 20%"></div>
+                </div>
+            </div>
             <div id="quiz-questions-container" class="space-y-6 max-h-[60vh] overflow-y-auto pr-2">
                 </div>
             <div class="mt-8 flex justify-between items-center">
                 <button id="quiz-close-btn" class="text-violet-300 hover:text-white transition-colors">Close</button>
-                <button id="quiz-submit-btn" class="bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-5 rounded-lg transition-transform transform hover:scale-105">Submit Answers</button>
-            </div>
+                <button id="quiz-next-btn" class="bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-5 rounded-lg transition-transform transform hover:scale-105 disabled:bg-teal-800 disabled:opacity-70" disabled>Next Question &rarr;</button>
+                <button id="quiz-submit-btn" class="bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-5 rounded-lg transition-transform transform hover:scale-105 disabled:bg-sky-800 disabled:opacity-70 hidden" disabled>Submit Quiz</button>
+                </div>
         </div>
 
         <div id="quiz-result-view" class="hidden text-center">
@@ -149,10 +203,12 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
+    // --- Existing DOM elements ---
     const startQuizBtn = document.getElementById('start-quiz-btn');
     const quizModal = document.getElementById('quiz-modal');
     const quizModalContent = document.getElementById('quiz-modal-content');
     const closeBtn = document.getElementById('quiz-close-btn');
+    const nextBtn = document.getElementById('quiz-next-btn'); // NEW
     const submitBtn = document.getElementById('quiz-submit-btn');
     const doneBtn = document.getElementById('quiz-done-btn');
 
@@ -161,7 +217,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const resultView = document.getElementById('quiz-result-view');
     const questionsContainer = document.getElementById('quiz-questions-container');
 
+    const progressBar = document.getElementById('quiz-progress-bar'); // NEW
+    const currentQIndexEl = document.getElementById('current-question-index'); // NEW
+    const totalQCountEl = document.getElementById('total-questions-count'); // NEW
+    const progressPercentEl = document.getElementById('quiz-progress-percent'); // NEW
+
     const activeCategory = "{{ active_category }}";
+
+    let quizQuestions = []; // Store questions globally for navigation
+    let currentQuestionIndex = 0;
+    let userAnswers = []; // Store answers
 
     function showModal() {
         quizModal.classList.remove('hidden');
@@ -178,9 +243,117 @@ document.addEventListener('DOMContentLoaded', () => {
             loadingView.style.display = 'block';
             quizView.classList.add('hidden');
             resultView.classList.add('hidden');
+
+            // Reset quiz variables
+            quizQuestions = [];
+            currentQuestionIndex = 0;
+            userAnswers = [];
+            nextBtn.classList.remove('hidden');
+            submitBtn.classList.add('hidden');
+            questionsContainer.innerHTML = '';
         }, 300);
     }
 
+    // --- Dynamic Display Function ---
+    function displayCurrentQuestion() {
+        const q = quizQuestions[currentQuestionIndex];
+        const index = currentQuestionIndex;
+        const total = quizQuestions.length;
+
+        // Update progress indicators
+        currentQIndexEl.textContent = index + 1;
+        totalQCountEl.textContent = total;
+        const progressPercentage = ((index + 1) / total) * 100;
+        progressBar.style.width = progressPercentage + '%';
+        progressPercentEl.textContent = Math.round(progressPercentage) + '%';
+
+        // Hide/Show buttons
+        if (index === total - 1) {
+            nextBtn.classList.add('hidden');
+            submitBtn.classList.remove('hidden');
+        } else {
+            nextBtn.classList.remove('hidden');
+            submitBtn.classList.add('hidden');
+        }
+
+        // Render Question
+        questionsContainer.innerHTML = '';
+        const questionEl = document.createElement('div');
+        questionEl.classList.add('border-b', 'border-violet-800/50', 'pb-4', 'animate-fade-in-up'); // Use the fade-in-up class from base/index.html via style tag
+        questionEl.style.cssText = 'animation-duration: 0.5s;';
+
+        questionEl.innerHTML = `
+            <p class="font-semibold text-violet-200 mb-3">${index + 1}. ${q.question}</p>
+            <div class="space-y-2" id="options-group-${index}">
+                ${q.options.map((opt, i) => {
+                    const isChecked = userAnswers[index] === i;
+                    return `
+                        <div>
+                            <label class="option-label-${index} flex items-center p-3 rounded-lg bg-slate-800/50 hover:bg-slate-800/80 cursor-pointer transition-colors ${isChecked ? 'ring-2 ring-sky-500 bg-slate-700' : ''}">
+                                <input type="radio" name="question-${index}" value="${i}" class="sr-only" ${isChecked ? 'checked' : ''}>
+                                <span class="w-5 h-5 border rounded-full flex items-center justify-center mr-3 flex-shrink-0 ${isChecked ? 'bg-sky-500 border-sky-500' : 'border-slate-500'}">
+                                    ${isChecked ? '<svg class="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>' : ''}
+                                </span>
+                                <span class="ml-1 text-violet-300">${opt}</span>
+                            </label>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        `;
+        questionsContainer.appendChild(questionEl);
+
+        // Attach event listeners to the new options
+        document.querySelectorAll(`.option-label-${index}`).forEach(label => {
+            label.addEventListener('click', (e) => {
+                // Prevent clicking on input/span children from triggering label logic twice
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'SPAN' || e.target.tagName === 'SVG' || e.target.tagName === 'PATH') {
+                    // Find the actual label if target is a child element
+                    let targetLabel = e.target.closest('label');
+                    if(targetLabel !== label) return;
+                }
+
+                const input = label.querySelector('input[type="radio"]');
+                const selectedValue = parseInt(input.value);
+
+                // Update internal state
+                userAnswers[index] = selectedValue;
+
+                // Live UI update for all options in this group
+                document.querySelectorAll(`.option-label-${index}`).forEach(l => {
+                    l.classList.remove('ring-2', 'ring-sky-500', 'bg-slate-700');
+                    l.querySelector('.w-5.h-5').innerHTML = '';
+                    l.querySelector('.w-5.h-5').classList.remove('bg-sky-500', 'border-sky-500');
+                    l.querySelector('.w-5.h-5').classList.add('border-slate-500');
+                });
+
+                // Apply new live selection styles
+                label.classList.add('ring-2', 'ring-sky-500', 'bg-slate-700');
+                const checkmark = '<svg class="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>';
+                label.querySelector('.w-5.h-5').innerHTML = checkmark;
+                label.querySelector('.w-5.h-5').classList.remove('border-slate-500');
+                label.querySelector('.w-5.h-5').classList.add('bg-sky-500', 'border-sky-500');
+
+                // Enable Next/Submit button
+                if (index < total - 1) {
+                    nextBtn.disabled = false;
+                } else {
+                    submitBtn.disabled = false;
+                }
+            });
+        });
+
+        // Disable Next/Submit button if no answer is selected initially
+        const isAnswered = userAnswers[index] !== undefined && userAnswers[index] !== null;
+        if (index < total - 1) {
+            nextBtn.disabled = !isAnswered;
+        } else {
+            submitBtn.disabled = !isAnswered;
+        }
+    }
+    // --- End Dynamic Display Function ---
+
+    // --- Event Listeners ---
     startQuizBtn.addEventListener('click', async () => {
         showModal();
         startQuizBtn.disabled = true;
@@ -192,13 +365,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 const errorData = await response.json();
                 throw new Error(errorData.error || 'Failed to load quiz');
             }
-            const questions = await response.json();
+            quizQuestions = await response.json();
 
-            if (questions.length === 0) {
+            if (quizQuestions.length === 0) {
                  throw new Error('No questions available for this category yet.');
             }
 
-            displayQuestions(questions);
+            currentQuestionIndex = 0;
+            userAnswers = Array(quizQuestions.length).fill(null); // Initialize all answers to null
+
+            displayCurrentQuestion();
 
             loadingView.style.display = 'none';
             quizView.classList.remove('hidden');
@@ -213,62 +389,52 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    function displayQuestions(questions) {
-        questionsContainer.innerHTML = '';
-        questions.forEach((q, index) => {
-            const questionEl = document.createElement('div');
-            questionEl.classList.add('border-b', 'border-violet-800/50', 'pb-4');
-            questionEl.innerHTML = `
-                <p class="font-semibold text-violet-200 mb-3">${index + 1}. ${q.question}</p>
-                <div class="space-y-2">
-                    ${q.options.map((opt, i) => `
-                        <div>
-                            <label class="flex items-center p-3 rounded-lg bg-slate-800/50 hover:bg-slate-800/80 cursor-pointer transition-colors">
-                                <input type="radio" name="question-${index}" value="${i}" class="form-radio h-5 w-5 text-sky-500 bg-slate-700 border-slate-600 focus:ring-sky-500">
-                                <span class="ml-3 text-violet-300">${opt}</span>
-                            </label>
-                        </div>
-                    `).join('')}
-                </div>
-            `;
-            questionsContainer.appendChild(questionEl);
-        });
-    }
-
-    submitBtn.addEventListener('click', async () => {
-        const answers = [];
-        const questionCount = questionsContainer.children.length;
-
-        for (let i = 0; i < questionCount; i++) {
-            const selected = document.querySelector(`input[name="question-${i}"]:checked`);
-            answers.push(selected ? parseInt(selected.value) : null); // Use null for unanswered
-        }
-
-        if (answers.includes(null)) {
-            alert('Please answer all questions before submitting.');
+    nextBtn.addEventListener('click', () => {
+        if (userAnswers[currentQuestionIndex] === null) {
+            alert('Please select an answer before proceeding.');
             return;
         }
+        currentQuestionIndex++;
+        displayCurrentQuestion();
+    });
+
+    submitBtn.addEventListener('click', async () => {
+        if (userAnswers[currentQuestionIndex] === null) {
+            alert('Please select an answer before submitting.');
+            return;
+        }
+
+        // Visually disable buttons during submission
+        submitBtn.disabled = true;
+        closeBtn.disabled = true;
+        submitBtn.textContent = 'Submitting...';
 
         try {
             const response = await fetch('/api/quiz/submit', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ answers: answers })
+                body: JSON.stringify({ answers: userAnswers })
             });
             const result = await response.json();
 
             if (result.success) {
                 document.getElementById('quiz-result-message').textContent = result.message;
                 document.getElementById('quiz-reward-message').textContent = result.reward_message;
+
                 quizView.classList.add('hidden');
                 resultView.classList.remove('hidden');
+
             } else {
                 alert('Error submitting quiz: ' + result.error);
+                hideModal();
             }
 
         } catch (error) {
             console.error('Submission error:', error);
             alert('An error occurred while submitting. Please try again.');
+            hideModal();
+        } finally {
+            // No need to re-enable submitBtn as we move to result view
         }
     });
 
@@ -279,9 +445,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Check if a quiz exists for the current category and disable the button if not
-    const availableQuizzes = {{ categories|tojson }};
     const quizDataKeys = Object.keys({{ QUIZ_DATA|default({})|tojson }});
-    if (!quizDataKeys.includes(activeCategory)) {
+    if (!quizDataKeys.map(k => k.toLowerCase()).includes(activeCategory.toLowerCase())) {
         startQuizBtn.disabled = true;
         startQuizBtn.textContent = 'No Quiz Available';
     }

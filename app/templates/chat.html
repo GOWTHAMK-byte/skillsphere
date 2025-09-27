@@ -2,11 +2,14 @@
 
 {% block head %}
 <style>
+    /* Tailwind CSS classes are used for styling, ensure Tailwind is configured */
     #whiteboard {
         border: 2px solid #4c1d95; /* violet-800 */
         border-radius: 0.75rem;
         cursor: crosshair;
-        touch-action: none; /* Important for mobile */
+        touch-action: none; /* Important for mobile: Prevents scrolling while drawing */
+        /* Set initial background to black/dark for contrast */
+        background-color: #0f172a; /* slate-900 */
     }
     .color-swatch {
         width: 30px;
@@ -19,6 +22,18 @@
     .color-swatch.active {
         border-color: #a78bfa; /* violet-400 */
     }
+
+    /* Style for the uploaded image in chat */
+    .chat-image {
+        max-width: 100%;
+        max-height: 250px;
+        border-radius: 0.5rem;
+        margin-top: 0.5rem;
+        display: block;
+    }
+
+    /* REMOVED: .whiteboard-modal-transition is no longer needed for a direct open/close */
+    /* If you want the fade effect back, you'll need the JS transition logic from the previous reply */
 </style>
 {% endblock %}
 
@@ -30,7 +45,6 @@
     </div>
 
     <div class="flex justify-center">
-        <!-- To-Do List Sidebar -->
         <div class="hidden md:flex flex-col w-80 max-w-xs bg-slate-800/50 border border-violet-900/60 rounded-2xl mr-6 h-[700px] p-6">
             <h2 class="text-xl font-bold text-violet-300 mb-4">To-Do List</h2>
             <div class="mb-4">
@@ -40,14 +54,13 @@
                 <span id="todo-progress-text" class="text-sm text-violet-200">0% complete</span>
             </div>
             <ul id="todo-list" class="space-y-3 flex-1 overflow-y-auto mb-4">
-                <!-- To-Do items will be rendered here -->
             </ul>
             <form id="todo-form" class="flex gap-2 mt-auto">
                 <input id="todo-input" type="text" placeholder="Add a task..." class="flex-grow px-3 py-2 rounded-lg border border-violet-800 bg-black/40 text-violet-100 focus:outline-none focus:ring-2 focus:ring-violet-500 transition">
                 <button type="submit" class="px-4 py-2 bg-violet-700 hover:bg-violet-600 text-white font-bold rounded-lg shadow-md transition-colors">Add</button>
             </form>
         </div>
-        <!-- Chat Area -->
+
         <div class="w-full max-w-4xl bg-slate-800/50 border border-violet-900/60 rounded-2xl flex flex-col h-[700px]">
             <div id="messages" class="flex-grow p-6 space-y-4 overflow-y-auto">
                 {% for msg in messages %}
@@ -60,7 +73,11 @@
                             {{ msg.sender.username }}
                         </p>
                         <div class="p-3 rounded-lg {% if msg.sender_id == current_user.id %}bg-violet-700 text-white{% else %}bg-slate-700 text-violet-200{% endif %}">
-                            <p class="text-sm">{{ msg.content }}</p>
+                            {% if msg.content and msg.content.startswith('data:image/') %}
+                                <img src="{{ msg.content }}" class="chat-image" alt="Uploaded Image">
+                            {% else %}
+                                <p class="text-sm">{{ msg.content }}</p>
+                            {% endif %}
                         </div>
                         <span class="text-xs text-violet-400 mt-1 block {% if msg.sender_id == current_user.id %}text-right{% else %}text-left{% endif %}">
                             {{ msg.timestamp.strftime('%b %d, %I:%M %p') }}
@@ -71,7 +88,13 @@
             </div>
             <div class="p-4 border-t border-violet-900/60">
                 <form id="message-form" class="flex items-center gap-4">
+                    <input type="file" id="file-upload" accept="image/*" class="hidden">
+
                     <input id="content-input" type="text" placeholder="Type your message..." autocomplete="off" class="flex-grow px-4 py-2 rounded-lg border border-violet-800 bg-black/40 text-violet-100 focus:outline-none focus:ring-2 focus:ring-violet-500 transition">
+
+                    <button id="upload-photo-btn" type="button" title="Upload Photo" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-lg shadow-md transition-colors focus-ring">
+                        🖼️
+                    </button>
                     <button id="open-whiteboard-btn" type="button" title="Open Whiteboard" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-lg shadow-md transition-colors focus-ring">
                         🎨
                     </button>
@@ -82,18 +105,26 @@
     </div>
 </div>
 
-<div id="whiteboard-modal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 transition-opacity duration-300">
-    <div id="whiteboard-container" class="bg-slate-800/50 border border-violet-900/60 rounded-2xl p-4 flex flex-col w-full max-w-5xl h-[90vh] relative">
-        <button id="close-whiteboard-btn" class="absolute top-2 right-3 text-2xl text-violet-300 hover:text-white font-bold z-10" title="Close Whiteboard">&times;</button>
-        <div class="mb-4 p-3 bg-slate-900/60 rounded-lg flex items-center justify-center gap-4">
-            <span class="text-violet-300 font-semibold">Color:</span>
-            <div class="color-swatch active" style="background-color: #f5f5f5;" data-color="#f5f5f5"></div>
-            <div class="color-swatch" style="background-color: #ef4444;" data-color="#ef4444"></div>
-            <div class="color-swatch" style="background-color: #3b82f6;" data-color="#3b82f6"></div>
-            <div class="color-swatch" style="background-color: #22c55e;" data-color="#22c55e"></div>
-            <button id="clear-btn" class="ml-auto px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg text-sm">Clear Board</button>
+<div id="whiteboard-modal" class="hidden fixed inset-0 bg-black/75 flex items-center justify-center z-50 p-4">
+    <div id="whiteboard-container" class="bg-slate-800/90 border border-violet-700 rounded-2xl p-6 flex flex-col w-full max-w-6xl h-[95vh] relative shadow-2xl">
+        <button id="close-whiteboard-btn" class="absolute top-2 right-4 text-4xl text-violet-300 hover:text-white font-light z-10 leading-none" title="Close Whiteboard">&times;</button>
+
+        <div class="mb-4 p-3 bg-slate-900/60 rounded-xl flex items-center justify-center gap-6 shadow-inner">
+            <span class="text-violet-300 font-semibold text-lg">Drawing Tools:</span>
+
+            <div class="flex gap-3">
+                <div class="color-swatch active" style="background-color: #f5f5f5;" data-color="#f5f5f5" title="White"></div>
+                <div class="color-swatch" style="background-color: #ef4444;" data-color="#ef4444" title="Red"></div>
+                <div class="color-swatch" style="background-color: #3b82f6;" data-color="#3b82f6" title="Blue"></div>
+                <div class="color-swatch" style="background-color: #22c55e;" data-color="#22c55e" title="Green"></div>
+                <div class="color-swatch" style="background-color: #f97316;" data-color="#f97316" title="Orange"></div>
+                <div class="color-swatch" style="background-color: #8b5cf6;" data-color="#8b5cf6" title="Violet"></div>
+            </div>
+
+            <button id="clear-btn" class="ml-auto px-5 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg text-base shadow-lg transition-colors">Clear Board</button>
         </div>
-        <div class="flex-grow w-full h-full">
+
+        <div class="flex-grow w-full h-full min-h-0">
              <canvas id="whiteboard" class="w-full h-full"></canvas>
         </div>
     </div>
@@ -101,15 +132,17 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('static', filename='js/socket.io.min.js') }}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     // --- Shared Setup ---
     const postId = {{ post.id|tojson }};
     const currentUserId = {{ current_user.id|tojson }};
+    // Ensure the socket connects to the correct namespace
     const socket = io('/chat');
 
     // =================================================================
-    // ### TO-DO LIST LOGIC ###
+    // ### TO-DO LIST LOGIC ### (Local Storage Based)
     // =================================================================
     const todoList = document.getElementById('todo-list');
     const todoForm = document.getElementById('todo-form');
@@ -117,7 +150,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const todoProgressBar = document.getElementById('todo-progress-bar');
     const todoProgressText = document.getElementById('todo-progress-text');
 
-    // Simple localStorage key for per-room to-dos
     const todoKey = `chat_todos_${postId}`;
     let todos = JSON.parse(localStorage.getItem(todoKey) || '[]');
 
@@ -154,7 +186,6 @@ document.addEventListener('DOMContentLoaded', () => {
             li.appendChild(delBtn);
             todoList.appendChild(li);
         });
-        // Progress
         const percent = todos.length ? Math.round((completed / todos.length) * 100) : 0;
         todoProgressBar.style.width = percent + '%';
         todoProgressText.textContent = percent + '% complete';
@@ -181,62 +212,70 @@ document.addEventListener('DOMContentLoaded', () => {
     const messageForm = document.getElementById('message-form');
     const contentInput = document.getElementById('content-input');
 
+    // Scroll to bottom on load
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+    // Helper function to format timestamp
+    function formatTimestamp(date) {
+        const options = { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+        return date.toLocaleTimeString([], options);
+    }
+
+    // Helper function to create message HTML
+    function createMessageHtml(data, isSelf) {
+        const content = data.content || '';
+        const isImage = content.startsWith('data:image/');
+        const contentBody = isImage
+            ? `<img src="${content}" class="chat-image" alt="Uploaded Image">`
+            : `<p class="text-sm">${content}</p>`;
+
+        const username = data.username || '{{ current_user.username }}';
+        const avatarUrl = data.avatar_url || '{{ current_user.profile.avatar_url }}';
+        const timestamp = data.timestamp;
+
+        return `
+            <div class="flex items-start gap-3 ${isSelf ? 'flex-row-reverse' : ''}">
+                <a href="/user/${username}">
+                    <img src="${avatarUrl}" alt="${username}'s avatar" class="w-10 h-10 rounded-full">
+                </a>
+                <div class="max-w-xs md:max-w-md">
+                    <p class="text-sm font-bold text-violet-200 mb-1 ${isSelf ? 'text-right' : 'text-left'}">${username}</p>
+                    <div class="p-3 rounded-lg ${isSelf ? 'bg-violet-700 text-white' : 'bg-slate-700 text-violet-200'}">
+                        ${contentBody}
+                    </div>
+                    <span class="text-xs text-violet-400 mt-1 block ${isSelf ? 'text-right' : 'text-left'}">
+                        ${timestamp}
+                    </span>
+                </div>
+            </div>`;
+    }
 
     socket.on('connect', () => {
         socket.emit('join', { post_id: postId });
     });
 
     socket.on('receive_message', (data) => {
+        // Only render messages from others, as sender renders locally
         if (data.sender_id == currentUserId) {
             return;
         }
 
-        // CHANGE 2: Added sender's username to incoming messages
-        const messageHtml = `
-            <div class="flex items-start gap-3">
-                <a href="/user/${data.username}">
-                    <img src="${data.avatar_url}" alt="${data.username}'s avatar" class="w-10 h-10 rounded-full">
-                </a>
-                <div class="max-w-xs md:max-w-md">
-                    <p class="text-sm font-bold text-violet-200 mb-1 text-left">${data.username}</p>
-                    <div class="p-3 rounded-lg bg-slate-700 text-violet-200">
-                        <p class="text-sm">${data.content}</p>
-                    </div>
-                    <span class="text-xs text-violet-400 mt-1 block text-left">
-                        ${data.timestamp}
-                    </span>
-                </div>
-            </div>`;
-        messagesDiv.innerHTML += messageHtml;
+        messagesDiv.innerHTML += createMessageHtml(data, false);
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
     });
 
     messageForm.addEventListener('submit', (e) => {
         e.preventDefault();
         const content = contentInput.value.trim();
-        if (content) {
-            const timestamp = new Date().toLocaleTimeString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 
-            // CHANGE 3: Added sender's username to your own new messages
-            const messageHtml = `
-                <div class="flex items-start gap-3 flex-row-reverse">
-                    <a href="{{ url_for('user', username=current_user.username) }}">
-                        <img src="{{ current_user.profile.avatar_url }}" alt="{{ current_user.username }}'s avatar" class="w-10 h-10 rounded-full">
-                    </a>
-                    <div class="max-w-xs md:max-w-md">
-                        <p class="text-sm font-bold text-violet-200 mb-1 text-right">{{ current_user.username }}</p>
-                        <div class="p-3 rounded-lg bg-violet-700 text-white">
-                            <p class="text-sm">${content}</p>
-                        </div>
-                        <span class="text-xs text-violet-400 mt-1 block text-right">
-                            ${timestamp}
-                        </span>
-                    </div>
-                </div>`;
-            messagesDiv.innerHTML += messageHtml;
+        if (content) {
+            const timestamp = formatTimestamp(new Date());
+
+            // Local render
+            messagesDiv.innerHTML += createMessageHtml({ content, timestamp }, true);
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
+            // Send via socket
             socket.emit('send_message', {
                 post_id: postId,
                 content: content,
@@ -246,7 +285,57 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // =================================================================
-    // ### WHITEBOARD LOGIC (No Changes) ###
+    // ### PHOTO UPLOAD LOGIC ###
+    // =================================================================
+    const uploadPhotoBtn = document.getElementById('upload-photo-btn');
+    const fileUpload = document.getElementById('file-upload');
+
+    // Trigger hidden file input when button is clicked
+    uploadPhotoBtn.addEventListener('click', () => {
+        fileUpload.click();
+    });
+
+    fileUpload.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file || !file.type.startsWith('image/')) {
+            alert('Please select an image file.');
+            return;
+        }
+
+        // Check file size (e.g., limit to 5MB, 5 * 1024 * 1024 bytes)
+        const MAX_FILE_SIZE = 5 * 1024 * 1024;
+        if (file.size > MAX_FILE_SIZE) {
+            alert('File size exceeds 5MB limit.');
+            fileUpload.value = '';
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const imageBase64 = event.target.result; // This is the data:image/... string
+            const timestamp = formatTimestamp(new Date());
+
+            // Local render: Use the imageBase64 string as content
+            messagesDiv.innerHTML += createMessageHtml({ content: imageBase64, timestamp }, true);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+            // Send image via socket
+            socket.emit('send_message', {
+                post_id: postId,
+                content: imageBase64,
+                is_image: true
+            });
+
+            // Clear the input so the same file can be uploaded again
+            fileUpload.value = '';
+        };
+
+        // Read the file as a Data URL (Base64)
+        reader.readAsDataURL(file);
+    });
+
+    // =================================================================
+    // ### WHITEBOARD LOGIC (FIXED) ###
     // =================================================================
     const canvas = document.getElementById('whiteboard');
     const context = canvas.getContext('2d');
@@ -259,30 +348,80 @@ document.addEventListener('DOMContentLoaded', () => {
     let lastY = 0;
     let currentColor = '#f5f5f5';
 
+    // Set initial context properties
+    context.lineCap = 'round';
+    context.lineWidth = 4;
+
     function resizeCanvas() {
-        canvas.width = canvas.clientWidth;
-        canvas.height = canvas.clientHeight;
+        // Temporarily store the image data
+        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+
+        // Sets the internal canvas resolution to match the size defined by CSS
+        const w = canvas.clientWidth;
+        const h = canvas.clientHeight;
+
+        canvas.width = w;
+        canvas.height = h;
+
+        // Restore the image data (important for preserving the drawing)
+        context.putImageData(imageData, 0, 0);
+
+        // Re-apply context settings
+        context.lineCap = 'round';
+        context.lineWidth = 4;
     }
-    window.addEventListener('resize', resizeCanvas);
+
+    // Call resize on window resize events (if modal is open)
+    window.addEventListener('resize', () => {
+        // Since we removed the opacity class, we just check if it's NOT hidden
+        if (!whiteboardModal.classList.contains('hidden')) {
+             resizeCanvas();
+        }
+    });
 
     function drawLine(x0, y0, x1, y1, color) {
         context.beginPath();
         context.moveTo(x0, y0);
         context.lineTo(x1, y1);
         context.strokeStyle = color;
-        context.lineWidth = 4;
-        context.lineCap = 'round';
+        context.lineWidth = 4; // Ensure line width is always set
         context.stroke();
         context.closePath();
+    }
+
+    // Helper to get consistent coordinates for mouse/touch
+    function getCoords(e) {
+        const rect = canvas.getBoundingClientRect();
+        // Use changedTouches for touchend, touches for touchmove/touchstart
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        return {
+            x: clientX - rect.left,
+            y: clientY - rect.top
+        };
+    }
+
+    function handlePointerStart(e) {
+        if (e.type === 'mousedown' && e.button !== 0) return;
+        e.preventDefault(); // Prevent default browser actions like scrolling/text selection
+        isDrawing = true;
+        const coords = getCoords(e);
+        [lastX, lastY] = [coords.x, coords.y];
+        // Draw a single dot immediately on start
+        drawLine(lastX, lastY, lastX + 0.1, lastY + 0.1, currentColor);
     }
 
     function handlePointerMove(e) {
         if (!isDrawing) return;
         e.preventDefault();
-        const rect = canvas.getBoundingClientRect();
-        const currentX = e.offsetX || e.touches[0].clientX - rect.left;
-        const currentY = e.offsetY || e.touches[0].clientY - rect.top;
+        const coords = getCoords(e);
+        const currentX = coords.x;
+        const currentY = coords.y;
+
+        // 1. Draw locally
         drawLine(lastX, lastY, currentX, currentY, currentColor);
+
+        // 2. Send normalized coordinates (0 to 1) via socket
         socket.emit('drawing', {
             post_id: postId,
             x0: lastX / canvas.width,
@@ -291,34 +430,40 @@ document.addEventListener('DOMContentLoaded', () => {
             y1: currentY / canvas.height,
             color: currentColor
         });
+
+        // 3. Update last position
         [lastX, lastY] = [currentX, currentY];
     }
 
-    canvas.addEventListener('mousedown', (e) => {
-        isDrawing = true;
-        [lastX, lastY] = [e.offsetX, e.offsetY];
-    });
+    function handlePointerEnd() {
+        if (isDrawing) {
+            isDrawing = false;
+        }
+    }
+
+    // Consolidated Event Listeners for Mouse and Touch
+    canvas.addEventListener('mousedown', handlePointerStart);
     canvas.addEventListener('mousemove', handlePointerMove);
-    canvas.addEventListener('mouseup', () => isDrawing = false);
-    canvas.addEventListener('mouseout', () => isDrawing = false);
-    canvas.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        isDrawing = true;
-        const rect = canvas.getBoundingClientRect();
-        [lastX, lastY] = [e.touches[0].clientX - rect.left, e.touches[0].clientY - rect.top];
-    });
+    canvas.addEventListener('mouseup', handlePointerEnd);
+    canvas.addEventListener('mouseout', handlePointerEnd);
+
+    canvas.addEventListener('touchstart', handlePointerStart);
     canvas.addEventListener('touchmove', handlePointerMove);
-    canvas.addEventListener('touchend', () => isDrawing = false);
+    canvas.addEventListener('touchend', handlePointerEnd);
+
 
     socket.on('drawing', (data) => {
         const w = canvas.width;
         const h = canvas.height;
+        // Remote clients draw using received normalized coords * canvas size
         drawLine(data.x0 * w, data.y0 * h, data.x1 * w, data.y1 * h, data.color);
     });
+
     socket.on('clear_canvas', () => {
         context.clearRect(0, 0, canvas.width, canvas.height);
     });
 
+    // Color Swatch Logic
     const colorSwatches = document.querySelectorAll('.color-swatch');
     colorSwatches.forEach(swatch => {
         swatch.addEventListener('click', () => {
@@ -328,23 +473,34 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // Clear Button Logic
     document.getElementById('clear-btn').addEventListener('click', () => {
+        // Local clear
         context.clearRect(0, 0, canvas.width, canvas.height);
+        // Remote clear
         socket.emit('clear_canvas', { post_id: postId });
     });
 
+    // 🚀 Modal Opening and Closing Logic (Simplified Fix) 🚀
     openWhiteboardBtn.addEventListener('click', () => {
+        // 1. Make the modal visible immediately
         whiteboardModal.classList.remove('hidden');
-        resizeCanvas();
+
+        // 2. CRITICAL: Resize the canvas after the element is displayed
+        setTimeout(() => {
+            resizeCanvas();
+        }, 50); // 50ms ensures the canvas size is correct
     });
 
     closeWhiteboardBtn.addEventListener('click', () => {
+        // Hide the modal immediately
         whiteboardModal.classList.add('hidden');
     });
 
+    // Close on backdrop click
     whiteboardModal.addEventListener('click', (e) => {
         if (e.target === whiteboardModal) {
-            whiteboardModal.classList.add('hidden');
+            closeWhiteboardBtn.click(); // Reuse the close button logic
         }
     });
 });

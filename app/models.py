@@ -179,4 +179,3 @@ class HackathonPost(db.Model):
 
     def __repr__(self):
         return f'<HackathonPost {self.title}>'
-

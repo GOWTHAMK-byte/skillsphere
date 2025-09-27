@@ -3,22 +3,14 @@ from bs4 import BeautifulSoup
 from datetime import datetime
 import sqlalchemy as sa
 
-# Import your db instance and the HackathonPost model from your app
 from app import db
 from app.models import HackathonPost
 
 
 class HackathonScraper:
-    """
-    Scrapes hackathon data and provides a method to save it to the database.
-    """
     BASE_URL = "https://www.knowafest.com/explore/category/Hackathons_in_Chennai_2025"
 
     def fetch_hackathons(self):
-        """
-        Fetches a list of hackathons from the target URL.
-        Returns a list of dictionaries, where each dictionary represents a hackathon.
-        """
         try:
             response = requests.get(self.BASE_URL, timeout=15)
             response.raise_for_status()

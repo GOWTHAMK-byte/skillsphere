@@ -4,7 +4,6 @@
 <div class="bg-gradient-to-b from-[#0F0C29] via-[#1a163a] to-[#121212] min-h-screen text-white">
     <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
 
-        <!-- Header Section -->
         <div class="text-center mb-12">
             <h1 class="text-5xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-300 via-fuchsia-400 to-blue-400 tracking-tight drop-shadow-lg">
                 Hackathon Hub
@@ -13,7 +12,6 @@
                 Discover the latest hackathons and coding events. Your next big project starts here.
             </p>
 
-            <!-- Admin Scrape Button -->
             {% if current_user.is_authenticated %}
             <div class="mt-8">
                 <button id="scrape-btn" class="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-violet-700 to-fuchsia-700 hover:from-violet-600 hover:to-fuchsia-600 text-white font-bold py-3 px-6 rounded-lg transition text-base shadow-lg hover:shadow-[0_0_15px_rgba(192,132,252,0.5)] transform hover:scale-105">
@@ -30,7 +28,6 @@
             {% endif %}
         </div>
 
-        <!-- Posts Grid -->
         <div id="posts-container">
             {% if posts %}
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">

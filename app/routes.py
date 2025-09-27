@@ -28,11 +28,13 @@ from app.hackathon_scraper import HackathonScraper  # Make sure to import it
 from flask import render_template, jsonify
 import random  # <-- ADD THIS IMPORT
 from sqlalchemy.orm import selectinload
+
 # --- ADD QUIZ DATA STRUCTURE ---
 # A data structure to hold quiz questions for each category.
 # 'skill_reward' points to the skill that gets a level boost for a correct answer.
 QUIZ_DATA = {
     'Frontend': [
+        # Existing 5...
         {'question': 'What does CSS stand for?',
          'options': ['Cascading Style Sheets', 'Creative Style System', 'Computer Style Syntax',
                      'Colorful Style Sheets'], 'correct_answer': 0, 'skill_reward': 'css'},
@@ -44,9 +46,33 @@ QUIZ_DATA = {
         {'question': 'Which of the following is NOT a JavaScript data type?',
          'options': ['String', 'Boolean', 'Number', 'Character'], 'correct_answer': 3, 'skill_reward': 'javascript'},
         {'question': 'How do you select an element with id "demo" in CSS?',
-         'options': ['.demo', '#demo', 'demo', '*demo'], 'correct_answer': 1, 'skill_reward': 'css'}
+         'options': ['.demo', '#demo', 'demo', '*demo'], 'correct_answer': 1, 'skill_reward': 'css'},
+
+        # New 10
+        {'question': 'Which HTML tag is used to define a hyperlink?',
+         'options': ['link', 'a', 'href', 'hlink'], 'correct_answer': 1, 'skill_reward': 'html'},
+        {'question': 'Which CSS property controls the text color?',
+         'options': ['color', 'font-color', 'text-style', 'background'], 'correct_answer': 0, 'skill_reward': 'css'},
+        {'question': 'Which of these is a CSS framework?',
+         'options': ['Django', 'Bootstrap', 'React', 'Node'], 'correct_answer': 1, 'skill_reward': 'css'},
+        {'question': 'Which JavaScript method is used to add a new element at the end of an array?',
+         'options': ['push()', 'pop()', 'append()', 'add()'], 'correct_answer': 0, 'skill_reward': 'javascript'},
+        {'question': 'Which HTML attribute is used to specify an image source?',
+         'options': ['href', 'src', 'link', 'path'], 'correct_answer': 1, 'skill_reward': 'html'},
+        {'question': 'Which CSS property makes text bold?',
+         'options': ['text-weight', 'font-weight', 'bold', 'weight'], 'correct_answer': 1, 'skill_reward': 'css'},
+        {'question': 'Which HTML element is used to create a dropdown list?',
+         'options': ['input', '<', 'list', 'dropdown'], 'correct_answer': 1, 'skill_reward': 'html'},
+        {'question': 'Which JavaScript keyword is used to declare a constant?',
+         'options': ['let', 'const', 'var', 'define'], 'correct_answer': 1, 'skill_reward': 'javascript'},
+        {'question': 'Which CSS property is used to change background color?',
+         'options': ['color', 'bgcolor', 'background-color', 'fill'], 'correct_answer': 2, 'skill_reward': 'css'},
+        {'question': 'Which HTML5 element is used to play audio?',
+         'options': ['<sound>', '<music>', '<audio>', '<media>'], 'correct_answer': 2, 'skill_reward': 'html'}
     ],
+
     'Backend': [
+        # Existing 5...
         {'question': 'Which language is primarily used with the Django framework?',
          'options': ['Java', 'Ruby', 'Python', 'PHP'], 'correct_answer': 2, 'skill_reward': 'python'},
         {'question': 'What does SQL stand for?',
@@ -58,88 +84,316 @@ QUIZ_DATA = {
          'options': ['Apache Tomcat', 'Gunicorn', 'IIS', 'Nginx (as a web server)'], 'correct_answer': 1,
          'skill_reward': 'python'},
         {'question': 'In REST API architecture, what HTTP method is typically used for creating a new resource?',
-         'options': ['GET', 'POST', 'PUT', 'DELETE'], 'correct_answer': 1, 'skill_reward': 'backend'}
+         'options': ['GET', 'POST', 'PUT', 'DELETE'], 'correct_answer': 1, 'skill_reward': 'backend'},
+
+        # New 10
+        {'question': 'Which backend language is used with Spring Boot?',
+         'options': ['C#', 'Java', 'Ruby', 'Python'], 'correct_answer': 1, 'skill_reward': 'java'},
+        {'question': 'Which database does the MERN stack use?',
+         'options': ['MySQL', 'MongoDB', 'PostgreSQL', 'Oracle'], 'correct_answer': 1, 'skill_reward': 'mongodb'},
+        {'question': 'What is the default port for HTTP?',
+         'options': ['21', '25', '80', '443'], 'correct_answer': 2, 'skill_reward': 'backend'},
+        {'question': 'Which HTTP method is idempotent?',
+         'options': ['POST', 'PUT', 'PATCH', 'DELETE'], 'correct_answer': 1, 'skill_reward': 'backend'},
+        {'question': 'Express.js is used in which environment?',
+         'options': ['Browser', 'Node.js', 'Python', 'Ruby'], 'correct_answer': 1, 'skill_reward': 'node.js'},
+        {'question': 'Which tool is commonly used for API testing?',
+         'options': ['JMeter', 'Postman', 'Selenium', 'Cypress'], 'correct_answer': 1, 'skill_reward': 'backend'},
+        {'question': 'What response code indicates "Not Found"?',
+         'options': ['200', '301', '404', '500'], 'correct_answer': 2, 'skill_reward': 'backend'},
+        {'question': 'Which Python framework is known for being lightweight?',
+         'options': ['Django', 'Flask', 'FastAPI', 'Rails'], 'correct_answer': 1, 'skill_reward': 'flask'},
+        {'question': 'Which language powers ASP.NET?',
+         'options': ['Python', 'C#', 'PHP', 'Ruby'], 'correct_answer': 1, 'skill_reward': 'csharp'},
+        {'question': 'Which command installs packages in Node.js?',
+         'options': ['npm install', 'pip install', 'composer install', 'yarn get'],
+         'correct_answer': 0, 'skill_reward': 'node.js'}
     ],
     'Database': [
+        # Existing 5...
         {'question': 'What is a primary key in a database table?',
          'options': ['A key that can contain null values', 'A unique identifier for each record',
-                     'A reference to a key in another table', 'A key used only for sorting data'], 'correct_answer': 1,
-         'skill_reward': 'sql'},
+                     'A reference to a key in another table', 'A key used only for sorting data'],
+         'correct_answer': 1, 'skill_reward': 'sql'},
         {'question': 'Which of the following is a popular NoSQL database?',
-         'options': ['MySQL', 'PostgreSQL', 'MongoDB', 'SQLite'], 'correct_answer': 2, 'skill_reward': 'mongodb'},
+         'options': ['MySQL', 'PostgreSQL', 'MongoDB', 'SQLite'],
+         'correct_answer': 2, 'skill_reward': 'mongodb'},
         {'question': 'What SQL clause is used to combine rows from two or more tables?',
-         'options': ['COMBINE', 'UNION', 'JOIN', 'GROUP BY'], 'correct_answer': 2, 'skill_reward': 'sql'},
+         'options': ['COMBINE', 'UNION', 'JOIN', 'GROUP BY'],
+         'correct_answer': 2, 'skill_reward': 'sql'},
         {'question': 'Which SQL statement is used to extract data from a database?',
-         'options': ['GET', 'EXTRACT', 'OPEN', 'SELECT'], 'correct_answer': 3, 'skill_reward': 'sql'},
+         'options': ['GET', 'EXTRACT', 'OPEN', 'SELECT'],
+         'correct_answer': 3, 'skill_reward': 'sql'},
         {'question': 'In database transactions, what does the "A" in ACID stand for?',
-         'options': ['Atomicity', 'Accuracy', 'Availability', 'Authorization'], 'correct_answer': 0,
-         'skill_reward': 'database'}
+         'options': ['Atomicity', 'Accuracy', 'Availability', 'Authorization'],
+         'correct_answer': 0, 'skill_reward': 'database'},
+
+        # New 10
+        {'question': 'Which SQL keyword is used to sort the result-set?',
+         'options': ['ORDER BY', 'SORT', 'GROUP BY', 'ARRANGE'],
+         'correct_answer': 0, 'skill_reward': 'sql'},
+        {'question': 'Which of these is a relational database?',
+         'options': ['MongoDB', 'PostgreSQL', 'Redis', 'Cassandra'],
+         'correct_answer': 1, 'skill_reward': 'postgresql'},
+        {'question': 'What does the "I" in ACID stand for?',
+         'options': ['Isolation', 'Indexing', 'Integration', 'Iteration'],
+         'correct_answer': 0, 'skill_reward': 'database'},
+        {'question': 'Which SQL function is used to count rows?',
+         'options': ['SUM()', 'COUNT()', 'TOTAL()', 'ROWCOUNT()'],
+         'correct_answer': 1, 'skill_reward': 'sql'},
+        {'question': 'In SQL, which keyword is used to remove duplicates?',
+         'options': ['UNIQUE', 'DISTINCT', 'REMOVE', 'ONLY'],
+         'correct_answer': 1, 'skill_reward': 'sql'},
+        {'question': 'Which of these is an in-memory key-value store?',
+         'options': ['MySQL', 'PostgreSQL', 'Redis', 'SQLite'],
+         'correct_answer': 2, 'skill_reward': 'redis'},
+        {'question': 'What does a foreign key represent?',
+         'options': ['A unique identifier', 'A link to another table’s primary key',
+                     'A backup key', 'A temporary key'],
+         'correct_answer': 1, 'skill_reward': 'sql'},
+        {'question': 'Which SQL command is used to remove a table?',
+         'options': ['DELETE', 'REMOVE', 'DROP', 'TRUNCATE'],
+         'correct_answer': 2, 'skill_reward': 'sql'},
+        {'question': 'Which indexing type is most common in relational databases?',
+         'options': ['B-tree', 'Hash', 'Bitmap', 'Full-text'],
+         'correct_answer': 0, 'skill_reward': 'database'},
+        {'question': 'What does normalization in databases aim to reduce?',
+         'options': ['Redundancy', 'Indexes', 'Joins', 'Queries'],
+         'correct_answer': 0, 'skill_reward': 'database'}
     ],
+
     'DevOps': [
+        # Existing 5...
         {'question': 'What is Docker used for?',
-         'options': ['Running virtual machines', 'Containerization of applications', 'Cloud storage management',
-                     'Automated testing'], 'correct_answer': 1, 'skill_reward': 'docker'},
+         'options': ['Running virtual machines', 'Containerization of applications',
+                     'Cloud storage management', 'Automated testing'],
+         'correct_answer': 1, 'skill_reward': 'docker'},
         {'question': 'What does CI/CD stand for?',
-         'options': ['Continuous Integration / Continuous Deployment', 'Code Integration / Code Delivery',
-                     'Continuous Intelligence / Cloud Data', 'Code Inspection / Custom Deployment'], 'correct_answer': 0,
-         'skill_reward': 'ci/cd'},
+         'options': ['Continuous Integration / Continuous Deployment',
+                     'Code Integration / Code Delivery',
+                     'Continuous Intelligence / Cloud Data',
+                     'Code Inspection / Custom Deployment'],
+         'correct_answer': 0, 'skill_reward': 'ci/cd'},
         {'question': 'What is the primary function of Kubernetes?',
          'options': ['To build container images', 'To orchestrate and manage containers at scale',
-                     'To write infrastructure as code', 'To monitor server logs'], 'correct_answer': 1,
-         'skill_reward': 'kubernetes'},
+                     'To write infrastructure as code', 'To monitor server logs'],
+         'correct_answer': 1, 'skill_reward': 'kubernetes'},
         {'question': 'Which AWS service is commonly used for creating CI/CD pipelines?',
-         'options': ['AWS S3', 'AWS EC2', 'AWS Lambda', 'AWS CodePipeline'], 'correct_answer': 3,
-         'skill_reward': 'aws'},
+         'options': ['AWS S3', 'AWS EC2', 'AWS Lambda', 'AWS CodePipeline'],
+         'correct_answer': 3, 'skill_reward': 'aws'},
         {'question': 'Jenkins is a popular open-source tool primarily used for...',
-         'options': ['Version control', 'Automation and CI/CD', 'Database administration', 'Code editing'],
+         'options': ['Version control', 'Automation and CI/CD',
+                     'Database administration', 'Code editing'],
+         'correct_answer': 1, 'skill_reward': 'jenkins'},
+
+        # New 10
+        {'question': 'Which command is used to build a Docker image?',
+         'options': ['docker start', 'docker build', 'docker run', 'docker image'],
+         'correct_answer': 1, 'skill_reward': 'docker'},
+        {'question': 'Which tool is used for infrastructure as code?',
+         'options': ['Terraform', 'Jenkins', 'Docker', 'Kubernetes'],
+         'correct_answer': 0, 'skill_reward': 'terraform'},
+        {'question': 'Which Git command creates a new branch?',
+         'options': ['git init', 'git branch', 'git checkout', 'git merge'],
+         'correct_answer': 1, 'skill_reward': 'git'},
+        {'question': 'Which configuration management tool uses YAML playbooks?',
+         'options': ['Chef', 'Puppet', 'Ansible', 'SaltStack'],
+         'correct_answer': 2, 'skill_reward': 'ansible'},
+        {'question': 'Which service provides monitoring in AWS?',
+         'options': ['CloudTrail', 'CloudFormation', 'CloudWatch', 'Lambda'],
+         'correct_answer': 2, 'skill_reward': 'aws'},
+        {'question': 'Which version control system is most widely used?',
+         'options': ['SVN', 'Mercurial', 'Git', 'CVS'],
+         'correct_answer': 2, 'skill_reward': 'git'},
+        {'question': 'Which file defines multi-container Docker applications?',
+         'options': ['dockerfile', 'docker-compose.yml', 'package.json', 'config.yaml'],
+         'correct_answer': 1, 'skill_reward': 'docker'},
+        {'question': 'Which command is used to deploy Kubernetes configurations?',
+         'options': ['kubectl apply', 'kubectl create', 'kubectl run', 'kubectl start'],
+         'correct_answer': 0, 'skill_reward': 'kubernetes'},
+        {'question': 'What does IaC stand for in DevOps?',
+         'options': ['Internet as Code', 'Infrastructure as Code', 'Integration and Control', 'Input as Code'],
+         'correct_answer': 1, 'skill_reward': 'devops'},
+        {'question': 'Which Jenkins file is used to define pipelines?',
+         'options': ['pipeline.yaml', 'Jenkinsfile', 'config.xml', 'build.json'],
          'correct_answer': 1, 'skill_reward': 'jenkins'}
     ],
+
     'Mobile': [
+        # Existing 5...
         {'question': 'What is the primary programming language for native iOS development?',
          'options': ['Java', 'Kotlin', 'Swift', 'C#'], 'correct_answer': 2, 'skill_reward': 'swift'},
         {'question': 'Which language is now Google\'s official and preferred language for Android development?',
          'options': ['Java', 'Kotlin', 'C++', 'Dart'], 'correct_answer': 1, 'skill_reward': 'kotlin'},
-        {'question':
-             'Which framework allows for building natively compiled applications from a single codebase for mobile, web, and desktop?',
-         'options': ['React Native', 'Xamarin', 'Flutter', 'Ionic'], 'correct_answer': 2, 'skill_reward': 'flutter'},
+        {
+            'question': 'Which framework allows for building natively compiled applications from a single codebase for mobile, web, and desktop?',
+            'options': ['React Native', 'Xamarin', 'Flutter', 'Ionic'], 'correct_answer': 2, 'skill_reward': 'flutter'},
         {'question': 'React Native is a mobile application framework based on which JavaScript library?',
          'options': ['Angular', 'Vue', 'React', 'Svelte'], 'correct_answer': 2, 'skill_reward': 'react native'},
         {'question': 'In Android development, what file format is primarily used for defining user interface layouts?',
-         'options': ['HTML', 'CSS', 'XML', 'JSON'], 'correct_answer': 2, 'skill_reward': 'android'}
+         'options': ['HTML', 'CSS', 'XML', 'JSON'], 'correct_answer': 2, 'skill_reward': 'android'},
+
+        # New 10
+        {'question': 'Which company develops iOS?',
+         'options': ['Google', 'Microsoft', 'Apple', 'IBM'], 'correct_answer': 2, 'skill_reward': 'ios'},
+        {'question': 'Which IDE is commonly used for Android development?',
+         'options': ['Xcode', 'Android Studio', 'Eclipse', 'IntelliJ'],
+         'correct_answer': 1, 'skill_reward': 'android'},
+        {'question': 'Which file format is used to distribute Android apps?',
+         'options': ['.ipa', '.exe', '.apk', '.jar'], 'correct_answer': 2, 'skill_reward': 'android'},
+        {'question': 'Which file format is used to distribute iOS apps?',
+         'options': ['.apk', '.ipa', '.exe', '.dmg'], 'correct_answer': 1, 'skill_reward': 'ios'},
+        {'question': 'Which programming language is used by Flutter?',
+         'options': ['Java', 'Dart', 'Swift', 'Kotlin'], 'correct_answer': 1, 'skill_reward': 'flutter'},
+        {'question': 'Which UI toolkit is used by Google for building cross-platform apps?',
+         'options': ['SwiftUI', 'Flutter', 'React Native', 'Xamarin'],
+         'correct_answer': 1, 'skill_reward': 'flutter'},
+        {'question': 'Which layout is used in Android for arranging items in a list?',
+         'options': ['GridLayout', 'RelativeLayout', 'LinearLayout', 'ConstraintLayout'],
+         'correct_answer': 2, 'skill_reward': 'android'},
+        {'question': 'Which Apple framework is used for modern UI development?',
+         'options': ['UIKit', 'SwiftUI', 'Cocoa', 'Metal'], 'correct_answer': 1, 'skill_reward': 'swift'},
+        {'question': 'Which tool is used to emulate Android devices on PC?',
+         'options': ['Simulator', 'AVD Manager', 'EmulatorX', 'Genymotion'],
+         'correct_answer': 1, 'skill_reward': 'android'},
+        {'question': 'Which database is commonly used in Android apps?',
+         'options': ['MongoDB', 'SQLite', 'Firebase Firestore', 'Redis'],
+         'correct_answer': 1, 'skill_reward': 'database'}
     ],
+
     'Data Science': [
-        {'question': 'Which Python library is essential for data manipulation and analysis, providing the DataFrame structure?',
-         'options': ['NumPy', 'Pandas', 'Scikit-learn', 'Matplotlib'], 'correct_answer': 1, 'skill_reward': 'pandas'},
+        # Existing 5...
+        {
+            'question': 'Which Python library is essential for data manipulation and analysis, providing the DataFrame structure?',
+            'options': ['NumPy', 'Pandas', 'Scikit-learn', 'Matplotlib'], 'correct_answer': 1,
+            'skill_reward': 'pandas'},
         {'question': 'Classifying an email as "spam" or "not spam" is an example of what type of machine learning?',
          'options': ['Regression', 'Clustering', 'Reinforcement Learning', 'Supervised Classification'],
          'correct_answer': 3, 'skill_reward': 'machine learning'},
         {'question': 'What is the fundamental data structure of the NumPy library?',
          'options': ['DataFrame', 'Series', 'List', 'ndarray'], 'correct_answer': 3, 'skill_reward': 'numpy'},
         {'question': 'TensorFlow and PyTorch are popular open-source libraries used primarily for what purpose?',
-         'options': ['Data visualization', 'Building and training neural networks', 'Web scraping',
-                     'Database management'], 'correct_answer': 1, 'skill_reward': 'tensorflow'},
+         'options': ['Data visualization', 'Building and training neural networks',
+                     'Web scraping', 'Database management'],
+         'correct_answer': 1, 'skill_reward': 'tensorflow'},
         {'question': 'Scikit-learn is a powerful Python library focused on...',
          'options': ['Deep learning and neural networks', 'Traditional machine learning algorithms',
-                     'Natural Language Processing only', 'Computer Vision only'], 'correct_answer': 1,
-         'skill_reward': 'scikit-learn'}
+                     'Natural Language Processing only', 'Computer Vision only'],
+         'correct_answer': 1, 'skill_reward': 'scikit-learn'},
+
+        # New 10
+        {'question': 'Which metric is commonly used to evaluate classification models?',
+         'options': ['MSE', 'Accuracy', 'RMSE', 'R²'],
+         'correct_answer': 1, 'skill_reward': 'machine learning'},
+        {'question': 'Which library is primarily used for data visualization in Python?',
+         'options': ['Pandas', 'Matplotlib', 'Numpy', 'Scikit-learn'],
+         'correct_answer': 1, 'skill_reward': 'matplotlib'},
+        {'question': 'Which algorithm is used for clustering?',
+         'options': ['Linear Regression', 'Decision Trees', 'K-means', 'Naive Bayes'],
+         'correct_answer': 2, 'skill_reward': 'ml'},
+        {'question': 'Which type of learning uses reward and punishment?',
+         'options': ['Supervised', 'Unsupervised', 'Reinforcement', 'Semi-supervised'],
+         'correct_answer': 2, 'skill_reward': 'rl'},
+        {'question': 'Which Python library is commonly used for statistical modeling?',
+         'options': ['Statsmodels', 'Keras', 'Seaborn', 'PyTorch'],
+         'correct_answer': 0, 'skill_reward': 'statsmodels'},
+        {'question': 'Which of these is a dimensionality reduction technique?',
+         'options': ['PCA', 'KNN', 'Naive Bayes', 'SVM'],
+         'correct_answer': 0, 'skill_reward': 'ml'},
+        {'question': 'Which format is common for large datasets?',
+         'options': ['CSV', 'TXT', 'PDF', 'DOCX'],
+         'correct_answer': 0, 'skill_reward': 'data'},
+        {'question': 'Which deep learning model is best for image classification?',
+         'options': ['CNN', 'RNN', 'GAN', 'DBSCAN'],
+         'correct_answer': 0, 'skill_reward': 'dl'},
+        {'question': 'Which library provides high-level neural network APIs in Python?',
+         'options': ['Keras', 'Flask', 'OpenCV', 'BeautifulSoup'],
+         'correct_answer': 0, 'skill_reward': 'keras'},
+        {'question': 'Which evaluation metric is used for regression?',
+         'options': ['Accuracy', 'Precision', 'Mean Squared Error', 'F1-score'],
+         'correct_answer': 2, 'skill_reward': 'ml'}
     ],
+
     'Design': [
+        # Existing 5...
         {'question': 'Which tool is primarily used for vector graphics?',
-         'options': ['Adobe Photoshop', 'Figma', 'GIMP', 'Procreate'], 'correct_answer': 1, 'skill_reward': 'figma'},
+         'options': ['Adobe Photoshop', 'Figma', 'GIMP', 'Procreate'],
+         'correct_answer': 1, 'skill_reward': 'figma'},
         {'question': 'What does UX stand for in the context of design?',
-         'options': ['User Experience', 'User Extension', 'Universal Export', 'Utility Matrix'], 'correct_answer': 0,
-         'skill_reward': 'ux'},
+         'options': ['User Experience', 'User Extension', 'Universal Export', 'Utility Matrix'],
+         'correct_answer': 0, 'skill_reward': 'ux'},
         {'question': 'A wireframe is typically...',
          'options': ['A high-fidelity, full-color design', 'A low-fidelity, basic structural guide',
-                     'The final HTML and CSS code', 'A user testing script'], 'correct_answer': 1,
-         'skill_reward': 'prototyping'},
-        {'question': 'Which color model is used for digital screens?', 'options': ['CMYK', 'Pantone', 'RGB', 'HSL'],
+                     'The final HTML and CSS code', 'A user testing script'],
+         'correct_answer': 1, 'skill_reward': 'prototyping'},
+        {'question': 'Which color model is used for digital screens?',
+         'options': ['CMYK', 'Pantone', 'RGB', 'HSL'],
          'correct_answer': 2, 'skill_reward': 'ui'},
         {'question': 'What is the primary purpose of Adobe XD?',
          'options': ['Video editing', 'Photo manipulation', 'UI/UX design and prototyping', '3D modeling'],
-         'correct_answer': 2, 'skill_reward': 'adobe xd'}
+         'correct_answer': 2, 'skill_reward': 'adobe xd'},
+
+        # New 10
+        {'question': 'Which principle ensures design elements look balanced?',
+         'options': ['Contrast', 'Alignment', 'Balance', 'Hierarchy'],
+         'correct_answer': 2, 'skill_reward': 'design'},
+        {'question': 'Which format is best for scalable logos?',
+         'options': ['JPG', 'PNG', 'SVG', 'BMP'],
+         'correct_answer': 2, 'skill_reward': 'vector'},
+        {'question': 'Which typography term refers to spacing between letters?',
+         'options': ['Kerning', 'Leading', 'Tracking', 'Baseline'],
+         'correct_answer': 0, 'skill_reward': 'typography'},
+        {'question': 'Which design tool is developed by Adobe for vector design?',
+         'options': ['Illustrator', 'InDesign', 'Photoshop', 'XD'],
+         'correct_answer': 0, 'skill_reward': 'illustrator'},
+        {'question': 'Which design principle draws attention to key elements?',
+         'options': ['Proximity', 'Emphasis', 'Repetition', 'Movement'],
+         'correct_answer': 1, 'skill_reward': 'design'},
+        {'question': 'Which color scheme uses colors opposite each other on the color wheel?',
+         'options': ['Analogous', 'Monochromatic', 'Triadic', 'Complementary'],
+         'correct_answer': 3, 'skill_reward': 'color theory'},
+        {'question': 'Which tool is popular for collaborative UI design?',
+         'options': ['Figma', 'Paint', 'GIMP', 'MS Word'],
+         'correct_answer': 0, 'skill_reward': 'figma'},
+        {'question': 'Which principle of design is about creating visual consistency?',
+         'options': ['Hierarchy', 'Repetition', 'Alignment', 'Contrast'],
+         'correct_answer': 1, 'skill_reward': 'design'},
+        {'question': 'What is a mood board used for in design?',
+         'options': ['Database storage', 'Collecting visual inspiration',
+                     'Coding layouts', 'Usability testing'],
+         'correct_answer': 1, 'skill_reward': 'ui'},
+        {'question': 'Which file format is best for print design?',
+         'options': ['PNG', 'JPG', 'TIFF', 'GIF'],
+         'correct_answer': 2, 'skill_reward': 'design'}
     ]
 }
+
+
+@app.context_processor
+def utility_processor():
+    """Makes synergy_score_display function available in all templates."""
+
+    def synergy_score_display(score):
+        # Logic to determine the visual styling based on the score
+        if score >= 90:
+            color_class = "bg-green-700/60 text-green-300 border border-green-500/50"
+        elif score >= 75:
+            color_class = "bg-cyan-700/60 text-cyan-300 border border-cyan-500/50"
+        else:
+            color_class = "bg-yellow-700/60 text-yellow-300 border border-yellow-500/50"
+
+        # HTML for the visually stunning score bubble (uses Tailwind classes)
+        return f"""
+        <div class="p-4 pt-0">
+            <div class="synergy-score-bubble {color_class}">
+                <svg class="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd" /></svg>
+                Synergy: {score}%
+            </div>
+        </div>
+        """
+
+    # Return the dictionary to inject the function into the template context
+    return dict(synergy_score_display=synergy_score_display)
 
 
 @app.context_processor
@@ -331,7 +585,6 @@ def get_recommended_posts(user, limit=6):
         unique_posts.extend(remaining_posts[:needed])
     return unique_posts
 
-
 @app.route("/")
 def landing():
     if current_user.is_authenticated:
@@ -442,6 +695,183 @@ def logout():
     logout_user()
     return redirect(url_for('index'))
 
+LEARNING_RESOURCES = {
+    'python': [
+        {'title': 'Python for Beginners - Full Course', 'type': 'video', 'source': 'youtube', 'id': 'e-5obm1G_FY', 'description': 'A comprehensive 12-hour tutorial covering all the basics of Python programming, perfect for absolute beginners.'},
+        {'title': 'Object-Oriented Programming (OOP) in Python', 'type': 'video', 'source': 'youtube', 'id': 'Ej_02QuJS_s', 'description': 'Learn about classes, objects, inheritance, and other core OOP concepts in Python.'},
+        {'title': 'Flask Course - Python Web Application Development', 'type': 'video', 'source': 'youtube', 'id': 'Z1RJmh_OqeA', 'description': 'A complete course on the Flask micro web framework for Python, covering routing, templates, and databases.'},
+        {'title': 'Python Django Full Course', 'type': 'video', 'source': 'youtube', 'id': 'UmljXZIypDc', 'description': 'Learn the powerful Django framework from scratch by building a complete web application.'}
+    ],
+    'react': [
+        {'title': 'React JS Crash Course', 'type': 'video', 'source': 'youtube', 'id': 'w7ejDZ8o_g8', 'description': 'Get up and running with React, the popular JavaScript library for building user interfaces. Covers components, state, props, and hooks.'},
+        {'title': 'Full Modern React Tutorial', 'type': 'video', 'source': 'youtube', 'id': 'SqcY0GlETPk', 'description': 'A complete tutorial series on modern React, including hooks, context, and reducers.'},
+        {'title': 'Build and Deploy a React Admin Dashboard', 'type': 'video', 'source': 'youtube', 'id': 'wYpCWwD1pVA', 'description': 'A project-based tutorial where you build a feature-rich admin panel with React.'}
+    ],
+    'javascript': [
+        {'title': 'JavaScript Full Course for Beginners', 'type': 'video', 'source': 'youtube', 'id': 'PkZNo7MFNFg', 'description': 'Learn JavaScript from scratch with this complete 3-hour course covering variables, data types, functions, and the DOM.'},
+        {'title': 'ES6 JavaScript Tutorial for Beginners', 'type': 'video', 'source': 'youtube', 'id': 'WZQc7RUAg18', 'description': 'A guide to the modern features of JavaScript (ES6), including let/const, arrow functions, classes, and promises.'}
+    ],
+    'typescript': [
+        {'title': 'TypeScript - The Basics', 'type': 'video', 'source': 'youtube', 'id': 'ahCwqrYpI0k', 'description': 'A concise introduction to TypeScript, covering types, interfaces, classes, and how it enhances JavaScript development.'}
+    ],
+    'html': [
+        {'title': 'HTML Full Course - Build a Website Tutorial', 'type': 'video', 'source': 'youtube', 'id': 'pQN-pnXPaVg', 'description': 'A comprehensive tutorial for beginners to learn all the main concepts of HTML5 to build websites.'}
+    ],
+    'css': [
+        {'title': 'CSS Tutorial - Zero to Hero (Complete Course)', 'type': 'video', 'source': 'youtube', 'id': '1Rs2ND1ryYc', 'description': 'An in-depth course that covers everything from the basics of CSS to advanced topics like Flexbox, Grid, and animations.'},
+        {'title': 'Tailwind CSS Full Course for Beginners', 'type': 'video', 'source': 'youtube', 'id': 'lCxcTsOHrjo', 'description': 'Learn the popular utility-first CSS framework Tailwind CSS from scratch.'}
+    ],
+    'java': [
+        {'title': 'Java Full Course for Beginners', 'type': 'video', 'source': 'youtube', 'id': 'eIrMbAQSU34', 'description': 'Learn the fundamentals of Java programming in this comprehensive 12-hour video, including syntax, OOP, and data structures.'},
+        {'title': 'Spring Boot Tutorial for Beginners', 'type': 'video', 'source': 'youtube', 'id': 'vtPkZShrvXQ', 'description': 'A complete course on Spring Boot, the most popular framework for building enterprise-level applications in Java.'}
+    ],
+    'csharp': [
+        {'title': 'C# Full Course for free', 'type': 'video', 'source': 'youtube', 'id': 'A_f4_L-w5_A', 'description': 'A comprehensive 11-hour course on C# and the .NET framework, perfect for building a strong foundation.'}
+    ],
+    'node.js': [
+        {'title': 'Node.js and Express.js - Full Course', 'type': 'video', 'source': 'youtube', 'id': 'Oe421JkE9SA', 'description': 'Build and deploy a REST API using Node.js and the Express framework from scratch.'}
+    ],
+    'mongodb': [
+        {'title': 'MongoDB Crash Course', 'type': 'video', 'source': 'youtube', 'id': '-56x56UppqQ', 'description': 'A beginner-friendly crash course on the NoSQL database MongoDB, covering CRUD operations, indexes, and the aggregation framework.'}
+    ],
+    'postgresql': [
+        {'title': 'PostgreSQL Tutorial for Beginners', 'type': 'video', 'source': 'youtube', 'id': 'D_OLPA0-Q_0', 'description': 'Learn to use PostgreSQL, a powerful and popular open-source relational database system.'}
+    ],
+    'docker': [
+        {'title': 'Docker Tutorial for Beginners', 'type': 'video', 'source': 'youtube', 'id': '3c-iBn73dDE', 'description': 'An 80-minute crash course on Docker, covering images, containers, volumes, and Docker Compose.'}
+    ],
+    'kubernetes': [
+        {'title': 'Kubernetes Course - Full Beginners Tutorial (Container Orchestration)', 'type': 'video', 'source': 'youtube', 'id': 'd6WC5n9G_sM', 'description': 'An introduction to Kubernetes for absolute beginners, explaining concepts like pods, services, and deployments.'}
+    ],
+    'terraform': [
+        {'title': 'Terraform Course - From BEGINNER to PRO!', 'type': 'video', 'source': 'youtube', 'id': '7xngnjfIlK4', 'description': 'Learn how to manage infrastructure as code using Terraform, a key tool in modern DevOps.'}
+    ],
+    'aws': [
+        {'title': 'AWS Certified Cloud Practitioner - Full Course', 'type': 'video', 'source': 'youtube', 'id': 'SOTamWNgDKc', 'description': 'A complete study guide for the AWS CCP exam, which also serves as a great introduction to AWS core services.'}
+    ],
+    'git': [
+        {'title': 'Git and GitHub for Beginners - Crash Course', 'type': 'video', 'source': 'youtube', 'id': 'RGOj5yH7evk', 'description': 'Learn the basics of version control with Git and how to use GitHub for collaboration in this one-hour tutorial.'}
+    ],
+    'swift': [
+        {'title': 'Swift Tutorial - Full Course for Beginners', 'type': 'video', 'source': 'youtube', 'id': 'comQ1-x2a1Q', 'description': 'A complete course on the Swift programming language for iOS app development, covering variables, control flow, functions, and more.'}
+    ],
+    'kotlin': [
+        {'title': 'Kotlin Crash Course for Beginners', 'type': 'video', 'source': 'youtube', 'id': 'EExSSotojVI', 'description': 'A fast-paced introduction to Kotlin, the official language for Android development.'}
+    ],
+    'flutter': [
+        {'title': 'Flutter Course for Beginners', 'type': 'video', 'source': 'youtube', 'id': 'x0uinJstbI8', 'description': 'A comprehensive tutorial on Flutter for building beautiful, natively compiled applications for mobile, web, and desktop from a single codebase.'}
+    ],
+    'machine learning': [
+        {'title': 'Machine Learning for Beginners: An Introduction', 'type': 'video', 'source': 'youtube', 'id': 'i_LwzRVP7bg', 'description': 'Understand the core concepts of Machine Learning, including supervised, unsupervised, and reinforcement learning.'},
+        {'title': 'PyTorch for Deep Learning', 'type': 'video', 'source': 'youtube', 'id': 'V_xro1bcAuA', 'description': 'A complete course on PyTorch, one of the leading deep learning frameworks, for building neural networks.'}
+    ],
+    'pandas': [
+        {'title': 'Complete Python Pandas Data Science Tutorial', 'type': 'video', 'source': 'youtube', 'id': 'vmEHCJofslg', 'description': 'A deep dive into the Pandas library for data manipulation and analysis in Python, covering DataFrames, Series, and data cleaning.'}
+    ],
+    'numpy': [
+        {'title': 'Python NumPy Tutorial for Beginners', 'type': 'video', 'source': 'youtube', 'id': 'QUT1VHiLmmI', 'description': 'Learn the fundamentals of NumPy, the core library for numerical and scientific computing in Python.'}
+    ],
+    'figma': [
+        {'title': 'Figma UI Design Tutorial: Get Started in 25 Minutes', 'type': 'video', 'source': 'youtube', 'id': 'jk1T0s_w_MA', 'description': 'A quick and practical guide to start designing user interfaces with Figma.'}
+    ],
+    'ux': [
+        {'title': 'UX Design Full Course for Beginners', 'type': 'video', 'source': 'youtube', 'id': 'cKZEgtQUxlA', 'description': 'Learn the fundamentals of User Experience (UX) design, including user research, wireframing, and usability testing.'}
+    ],
+    'ui': [
+        {'title': 'Learn UI Design - The Complete Course', 'type': 'video', 'source': 'youtube', 'id': '5_26-Fyl4W8', 'description': 'A full course on User Interface (UI) design principles, covering color theory, typography, layout, and more.'}
+    ],
+    'sql': [
+        {'title': 'SQL Tutorial - Full Database Course for Beginners', 'type': 'video', 'source': 'youtube', 'id': 'HXV3zeQKqGY', 'description': 'Learn the fundamentals of SQL and database management in this comprehensive 4-hour course.'}
+    ]
+}
+
+
+@app.route('/learning')
+@login_required
+def learning_recommendations():
+    """Recommends learning resources and calculates overall progress for skills related to a user's applications."""
+
+    MAX_SKILL_LEVEL = 10  # Define a max level for progress bar scaling
+
+    applications = db.session.scalars(
+        sa.select(Application)
+        .where(Application.applicant_id == current_user.id)
+        .options(selectinload(Application.post).selectinload(Post.required_skills))
+    ).all()
+
+    if not applications:
+        return render_template('learning_recommendations.html', skills_data=[], title="Learning Hub")
+
+    all_relevant_skills = set()
+    for app in applications:
+        if app.post:
+            for skill in app.post.required_skills:
+                all_relevant_skills.add(skill.name.lower())
+
+    user_skill_levels = {
+        assoc.skill.name.lower(): assoc.level
+        for assoc in current_user.profile.skill_associations
+    }
+
+    skills_data = []
+    total_current_level = 0
+    total_max_level = 0
+
+    for skill_name in sorted(list(all_relevant_skills)):
+        # MODIFIED: Check if learning resources exist for the skill before adding it
+        if skill_name in LEARNING_RESOURCES and LEARNING_RESOURCES[skill_name]:
+            current_level = user_skill_levels.get(skill_name, 0)
+            skills_data.append({
+                'name': skill_name,
+                'current_level': current_level,
+                'max_level': MAX_SKILL_LEVEL,
+                'resources': LEARNING_RESOURCES.get(skill_name, [])
+            })
+            # Add to totals only if the skill is being displayed
+            total_current_level += current_level
+            total_max_level += MAX_SKILL_LEVEL
+
+    return render_template('learning_recommendations.html',
+                           skills_data=skills_data,
+                           total_current_level=total_current_level,
+                           total_max_level=total_max_level,
+                           title="Learning Hub")
+
+
+@app.route('/api/learning/video_watched', methods=['POST'])
+@login_required
+def video_watched():
+    """Increments a user's skill level when a learning video is completed."""
+    data = request.get_json()
+    skill_name = data.get('skill_name')
+    if not skill_name:
+        return jsonify({'success': False, 'error': 'Skill name is required.'}), 400
+
+    MAX_SKILL_LEVEL = 10  # Ensure this matches the value in the learning_recommendations route
+
+    # Find the skill object
+    skill = db.session.scalar(sa.select(Skill).where(Skill.name.ilike(skill_name)))
+    if not skill:
+        # If the skill doesn't exist for some reason, we can't update it.
+        return jsonify({'success': False, 'error': 'Skill not found.'}), 404
+
+    # Find the association between the user's profile and the skill
+    assoc = db.session.scalar(sa.select(ProfileSkill).where(
+        ProfileSkill.profile_id == current_user.profile.id,
+        ProfileSkill.skill_id == skill.id
+    ))
+
+    if assoc:
+        # If the user already has the skill, increment its level up to the max
+        if assoc.level < MAX_SKILL_LEVEL:
+            assoc.level += 1
+    else:
+        # If the user does not have the skill, add it to their profile with level 1
+        assoc = ProfileSkill(profile_id=current_user.profile.id, skill_id=skill.id, level=1)
+        db.session.add(assoc)
+
+    db.session.commit()
+    return jsonify({'success': True, 'skill_name': skill.name, 'new_level': assoc.level})
 
 @app.route('/api/skills/search')
 @login_required
@@ -488,10 +918,11 @@ def edit_profile():
         current_user.profile.bio = form.bio.data
         current_user.profile.college = form.college.data
         current_user.profile.year = form.year.data
-        current_user.profile.degree = form.degree.data
-        current_user.profile.github_url = form.github_url.data
-        current_user.profile.linkedin_url = form.linkedin_url.data
-        current_user.profile.gender = form.gender.data
+        form.degree.data = current_user.profile.degree
+        form.github_url.data = form.github_url.data
+        form.linkedin_url.data = form.linkedin_url.data
+        form.location.data = current_user.profile.location
+        form.gender.data = current_user.profile.gender
         try:
             skills_data = json.loads(form.skills.data)
         except (json.JSONDecodeError, TypeError):
@@ -529,6 +960,54 @@ def edit_profile():
 @login_required
 def create_post():
     form = CreatePostForm()
+
+    # --- START MODIFICATION: Pre-populate form with scraped data on GET request ---
+    if request.method == 'GET':
+        scraped_title = request.args.get('scraped_title')
+        scraped_description = request.args.get('scraped_description')
+        scraped_type = request.args.get('scraped_type')
+
+        # New check for custom scraped data (e.g., from a shared text snippet)
+        scraped_details = request.args.get('scraped_details')
+        scraped_location = None
+        scraped_date_str = None
+
+        if scraped_details:
+            # IMPROVED REGEX for location: Look for 'Venue:' and capture everything non-greedily
+            # until 'Event Date:' or the end of the string. We explicitly include spaces.
+            # The capture group (.*?) is now non-greedy.
+            location_match = re.search(r'Venue:\s*(.*?)(?:\.\s*Event Date:|$)', scraped_details)
+            if location_match:
+                # Group 1 contains the venue
+                scraped_location = location_match.group(1).strip()
+
+            # Regular expression to extract event date remains the same and is robust
+            date_match = re.search(r'Event Date:\s*(.*?)(?:\.\s*|$)', scraped_details)
+            if date_match:
+                scraped_date_str = date_match.group(1).strip()
+
+        if scraped_title:
+            form.event_name.data = scraped_title
+        if scraped_description:
+            form.description.data = scraped_description
+        if scraped_type and scraped_type == 'Hackathon':
+            form.event_type.data = 'Hackathon'
+
+        if scraped_location:
+            form.location.data = scraped_location
+
+        if scraped_date_str:
+            # Attempt to parse the date string (e.g., "08 May 2025") into a datetime object
+            try:
+                # Assuming format 'DD Month YYYY'
+                # Note: Flask forms often expect a datetime object for DateField/DateTimeField
+                parsed_date = datetime.strptime(scraped_date_str, '%d %b %Y')
+                form.event_datetime.data = parsed_date
+            except ValueError:
+                # If parsing fails, we leave the field empty and log a warning
+                app.logger.warning(f"Failed to parse scraped event date: {scraped_date_str}")
+    # --- END MODIFICATION ---
+
     if form.validate_on_submit():
         poster_filename = None
         if form.event_poster.data:
@@ -549,7 +1028,7 @@ def create_post():
                 'danger')
             return render_template('create_post.html', title='Create a New Post', form=form)
 
-        # --- MODIFIED ---
+        # --- MODIFIED --- (Existing post creation logic)
         post = Post(event_name=form.event_name.data,
                     description=form.description.data,
                     idea=form.idea.data,
@@ -593,7 +1072,9 @@ def create_post():
         flash('Your post has been created successfully!', 'success')
         return redirect(url_for('user', username=current_user.username))
     return render_template('create_post.html', title='Create a New Post', form=form)
-# --- (Existing code from routes.py, ensure it's here) ...
+
+
+# --- (The rest of your existing routes.py code should follow) ---
 
 
 @app.route('/hackathons')
@@ -606,7 +1087,7 @@ def hackathons():
     return render_template('hackathons.html', posts=posts, title='Hackathons')
 
 
-@app.route('/scrape_hackathons', methods=['POST',"GET"])
+@app.route('/scrape_hackathons', methods=['POST', "GET"])
 @login_required
 def scrape_hackathons():
     if not current_user.is_authenticated:
@@ -619,9 +1100,9 @@ def scrape_hackathons():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
-# --- (The rest of your existing routes.py code should follow) ...
-# NOTE: The create, join, and leave hackathon team routes have been removed.
 
+# --- (The rest of your existing routes.py code should follow) ---
+# NOTE: The create, join, and leave hackathon team routes have been removed.
 
 
 @app.route('/apply/<int:post_id>', methods=['POST'])
@@ -799,7 +1280,7 @@ def leaderboard():
 def get_quiz(category):
     """
     Provides a set of questions for a given skill category.
-    The full question data (including answers) is stored in the user's session
+    The full question data (including answers) is stored in the session
     to prevent cheating by inspecting client-side code.
     """
     if category not in QUIZ_DATA:
@@ -929,6 +1410,77 @@ def handle_clear_canvas(data):
     emit('clear_canvas', to=str(post_id), skip_sid=request.sid)
 
 
+@socketio.on('voice_ready', namespace='/chat')
+@login_required
+def handle_voice_ready(data):
+    """
+    Called when a user successfully starts their local stream and is ready for WebRTC signaling.
+    Broadcasts the user's ID to all others in the room to initiate peer-to-peer connection offers.
+    """
+    post_id = data.get('post_id')
+    post = db.session.get(Post, post_id)
+
+    if not post or (current_user not in post.teammates and current_user != post.creator):
+        return
+
+    # Broadcast to everyone *in the room* (including the sender's client, which ignores its own signal)
+    # The client-side code expects the sender_id to be used for connection tracking.
+    emit('voice_peer_ready', {
+        'sender_id': current_user.id,
+        'username': current_user.username
+    }, room=str(post_id))  # We remove skip_sid=request.sid here. Clients should join room by post_id.
+
+
+@socketio.on('voice_signal', namespace='/chat')
+@login_required
+def handle_voice_signal(data):
+    """
+    Relays WebRTC signaling data (offer, answer, ICE candidate) from the sender
+    to a specific recipient within the chat room.
+    """
+    post_id = data.get('post_id')
+    recipient_id = data.get('recipient_id')
+
+    # We must ensure the recipient exists and is in the room.
+    recipient = db.session.get(User, recipient_id)
+    post = db.session.get(Post, post_id)
+
+    if not recipient or not post:
+        return
+
+    # Security check: Ensure the current user is authorized to send signals in this room
+    if current_user not in post.teammates and current_user != post.creator:
+        return
+
+    # Relay the signal directly to the recipient. The recipient joins a room named by their own ID
+    # to receive direct signals. The client JS handles the currentUserId as the recipient room name.
+    emit('voice_signal', {
+        'sender_id': current_user.id,
+        'type': data.get('type'),
+        'data': data.get('data')
+    }, room=str(recipient_id))
+
+
+@socketio.on('voice_leave', namespace='/chat')
+@login_required
+def handle_voice_leave(data):
+    """
+    Announces that a user is intentionally leaving the voice chat, allowing peers to clean up
+    their RTCPeerConnection object for that user.
+    """
+    post_id = data.get('post_id')
+    post = db.session.get(Post, post_id)
+
+    if not post or (current_user not in post.teammates and current_user != post.creator):
+        return
+
+    # Broadcast to everyone in the chat room that this user has left voice chat
+    emit('voice_peer_left', {
+        'sender_id': current_user.id,
+        'username': current_user.username
+    }, room=str(post_id), skip_sid=request.sid)
+
+
 @app.route('/teams')
 @login_required
 def teams():
@@ -1021,6 +1573,10 @@ def handle_join(data):
         emit('error', {'message': 'Unauthorized'}, room=request.sid)
         return
     join_room(str(post_id))
+
+    # Crucial: User also joins a private room named after their ID to receive direct WebRTC signals
+    join_room(str(current_user.id))
+
     emit('status', {'message': f'{current_user.username} joined the chat.'}, room=str(post_id))
 
 

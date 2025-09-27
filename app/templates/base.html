@@ -121,9 +121,8 @@
 
                 <a href="{{ url_for('leaderboard') }}" class="text-neutral-300 hover:text-white font-medium nav-link focus-ring" aria-label="Leaderboard">Leaderboard</a>
 
-                <!-- START: New Hackathons Button -->
+                <a href="{{ url_for('learning_recommendations') }}" class="text-neutral-300 hover:text-white font-medium nav-link focus-ring" aria-label="Learning Hub">Learning Hub</a>
                 <a href="{{ url_for('hackathons') }}" class="text-neutral-300 hover:text-white font-medium nav-link focus-ring" aria-label="Hackathons">Hackathons</a>
-                <!-- END: New Hackathons Button -->
 
                 {% if current_user.is_authenticated %}
                 <a href="{{ url_for('messages') }}" class="text-neutral-300 hover:text-white font-medium transition relative p-2 rounded-full hover:bg-violet-900/50 focus-ring" title="Messages" aria-label="View Messages">
