@@ -108,6 +108,4 @@ Contributions are welcome! If you have suggestions or want to improve the code, 
 
     Open a Pull Request.
 
-📄 License
 
-This project is licensed under the MIT License - see the LICENSE.md file for details.
