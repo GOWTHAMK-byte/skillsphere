@@ -76,7 +76,7 @@
             background: linear-gradient(45deg, rgba(255,255,255,0.3), transparent);
         }
 
-        /* MODIFICATION START: Chatbot Styles */
+        /* Chatbot Styles */
         #chatbot-messages::-webkit-scrollbar { width: 6px; }
         #chatbot-messages::-webkit-scrollbar-track { background: #1e1b4b; }
         #chatbot-messages::-webkit-scrollbar-thumb { background: #4338ca; border-radius: 3px; }
@@ -96,7 +96,6 @@
             transform: translateY(0);
             pointer-events: auto;
         }
-        /* MODIFICATION END: Chatbot Styles */
     </style>
 </head>
 <body class="min-h-screen font-sans antialiased overflow-x-hidden text-neutral-200">
@@ -118,9 +117,8 @@
                         <span id="dashboard-notification-badge" class="absolute -top-1.5 -right-3.5 bg-yellow-400 text-black text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold animate-pulse">{{ notifications_count }}</span>
                     {% endif %}
                 </a>
-
                 <a href="{{ url_for('leaderboard') }}" class="text-neutral-300 hover:text-white font-medium nav-link focus-ring" aria-label="Leaderboard">Leaderboard</a>
-
+                <!-- MERGED: Added new navigation links -->
                 <a href="{{ url_for('learning_recommendations') }}" class="text-neutral-300 hover:text-white font-medium nav-link focus-ring" aria-label="Learning Hub">Learning Hub</a>
                 <a href="{{ url_for('hackathons') }}" class="text-neutral-300 hover:text-white font-medium nav-link focus-ring" aria-label="Hackathons">Hackathons</a>
 
@@ -173,6 +171,7 @@
         </div>
     </main>
 
+    <!-- MERGED: Correct Gemini Chatbot Implementation -->
     <div id="chatbot-container" class="fixed bottom-5 right-5 z-[100] flex flex-col items-end">
         <div id="chatbot-window" class="w-80 h-[28rem] bg-slate-900/80 backdrop-blur-xl border border-violet-700/50 rounded-2xl shadow-2xl flex flex-col transition-all duration-300 transform-gpu opacity-0 translate-y-4 pointer-events-none mb-4">
             <div class="flex items-center justify-between p-3 border-b border-violet-800/60 flex-shrink-0">
@@ -194,14 +193,25 @@
                     </div>
                 </div>
             </div>
-            <div id="chatbot-actions" class="p-2 border-t border-violet-800/60 flex-shrink-0 space-y-2">
-                </div>
+            <div class="p-3 border-t border-violet-800/60 flex-shrink-0">
+                <form id="chatbot-form" class="flex items-center gap-2">
+                    <input id="chatbot-input" type="text"
+                           class="flex-grow bg-slate-800/50 border border-violet-700 rounded-lg px-3 py-2 text-sm text-violet-200 focus:outline-none focus:ring-2 focus:ring-violet-500 w-full"
+                           placeholder="Ask me anything..." autocomplete="off" required>
+                    <button type="submit"
+                            class="bg-violet-600 hover:bg-violet-700 text-white font-semibold px-4 py-2 rounded-lg transition-colors flex-shrink-0"
+                            aria-label="Send message">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                    </button>
+                </form>
+            </div>
         </div>
         <button id="chatbot-launcher" class="w-16 h-16 bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-full flex items-center justify-center shadow-lg transform transition-all hover:scale-110 hover:shadow-fuchsia-500/40 focus-ring" aria-label="Open Chatbot">
              <svg id="chat-icon-open" class="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
              <svg id="chat-icon-close" class="w-8 h-8 text-white hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
         </button>
     </div>
+
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/tsparticles-slim@2.12.0/tsparticles.slim.bundle.min.js"></script>
 
@@ -219,7 +229,7 @@
                 if(dashboardBadge) dashboardBadge.textContent = displayCount;
             } else {
                 badge.classList.add('hidden');
-                 if(dashboardBadge) dashboardBadge.style.display = 'none'; // Keep layout stable
+                 if(dashboardBadge) dashboardBadge.style.display = 'none';
             }
         }
     }
@@ -283,115 +293,86 @@
         retina_detect: true,
       });
 
-      // MODIFICATION START: Chatbot JavaScript Logic
+      // MERGED: Correct Gemini Chatbot JavaScript Logic
       const chatbotLauncher = document.getElementById('chatbot-launcher');
       const chatbotWindow = document.getElementById('chatbot-window');
       const chatbotCloseBtn = document.getElementById('chatbot-close-btn');
       const chatbotMessages = document.getElementById('chatbot-messages');
-      const chatbotActions = document.getElementById('chatbot-actions');
+      const chatbotForm = document.getElementById('chatbot-form');
+      const chatbotInput = document.getElementById('chatbot-input');
       const openIcon = document.getElementById('chat-icon-open');
       const closeIcon = document.getElementById('chat-icon-close');
       const typingIndicator = document.getElementById('typing-indicator');
 
-      const chatLogic = {
-        main: {
-            message: "Hi there! 👋 I'm the SkillSphere Assistant. How can I help you today?",
-            actions: [
-                { text: "What is SkillSphere?", next: "about" },
-                { text: "How do I find a team?", next: "findTeam" },
-                { text: "Tell me about recommendations", next: "recommendations" },
-                { text: "How does the leaderboard work?", next: "leaderboard" }
-            ]
-        },
-        about: {
-            message: "SkillSphere is a platform designed to help you find teammates for hackathons, projects, and competitions. You can create posts to recruit members, or apply to join existing teams!",
-            actions: [{ text: "⬅ Back to main menu", next: "main" }]
-        },
-        findTeam: {
-            message: "Easy! You can browse the 'All Posts' tab, check your personalized 'Recommended For You' feed, or use the search bar to find projects that match your interests.",
-            actions: [{ text: "⬅ Back to main menu", next: "main" }]
-        },
-        recommendations: {
-            message: "Our system analyzes your skills, past projects, and even your location to suggest posts where you'd be a great fit. The more you use the site, the better your recommendations get!",
-            actions: [{ text: "⬅ Back to main menu", next: "main" }]
-        },
-        leaderboard: {
-            message: "You can improve your rank by adding skills to your profile, getting them verified by completing projects, and acing the skill quizzes. Good luck! 🏆",
-            actions: [{ text: "⬅ Back to main menu", next: "main" }]
-        }
-      };
-
       const toggleChatbot = () => {
-        const isOpen = chatbotWindow.classList.toggle('is-open');
-        openIcon.classList.toggle('hidden', isOpen);
-        closeIcon.classList.toggle('hidden', !isOpen);
+          const isOpen = chatbotWindow.classList.toggle('is-open');
+          openIcon.classList.toggle('hidden', isOpen);
+          closeIcon.classList.toggle('hidden', !isOpen);
+          if (isOpen) {
+              chatbotInput.focus();
+          }
       };
 
       const appendMessage = (text, sender) => {
-        const messageWrapper = document.createElement('div');
-        messageWrapper.className = w-full flex ${sender === 'user' ? 'justify-end' : 'justify-start'};
+          const messageWrapper = document.createElement('div');
+          messageWrapper.className = `w-full flex ${sender === 'user' ? 'justify-end' : 'justify-start'}`;
+          messageWrapper.classList.add(sender === 'user' ? 'user-message' : 'bot-message');
 
-        const messageBubble = document.createElement('div');
-        messageBubble.className = chat-bubble max-w-[85%] rounded-2xl px-4 py-2 text-sm;
-        messageBubble.textContent = text;
+          const messageBubble = document.createElement('div');
+          messageBubble.innerHTML = text.replace(/\n/g, '<br>'); // Handle newlines
+          messageBubble.className = `chat-bubble max-w-[85%] rounded-2xl px-4 py-2 text-sm shadow-md`;
 
-        const wrapperClass = sender === 'user' ? 'user-message' : 'bot-message';
-        messageWrapper.classList.add(wrapperClass);
-
-        messageWrapper.appendChild(messageBubble);
-        chatbotMessages.insertBefore(messageWrapper, typingIndicator); // Insert before the indicator
-        chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+          messageWrapper.appendChild(messageBubble);
+          chatbotMessages.insertBefore(messageWrapper, typingIndicator);
+          chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
       };
 
-      const processChoice = (key) => {
-        const choice = chatLogic[key];
-        if (!choice) return;
+      async function getGeminiResponse(message) {
+          typingIndicator.classList.remove('hidden');
+          chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
 
-        // NEW: Show typing indicator
-        typingIndicator.classList.remove('hidden');
-        chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+          try {
+              const response = await fetch("{{ url_for('ask_gemini') }}", {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ message: message })
+              });
 
-        // NEW: Calculate dynamic delay based on message length
-        const typingDelay = Math.min(Math.max(choice.message.length * 25, 600), 2500);
+              if (!response.ok) {
+                  const errorData = await response.json();
+                  throw new Error(errorData.error || 'Network response was not ok.');
+              }
 
-        setTimeout(() => {
-            // NEW: Hide typing indicator
-            typingIndicator.classList.add('hidden');
+              const data = await response.json();
+              appendMessage(data.reply, 'bot');
 
-            appendMessage(choice.message, 'bot');
-            renderActions(choice.actions);
-        }, typingDelay);
-      };
-
-      const renderActions = (actions) => {
-        chatbotActions.innerHTML = '';
-        actions.forEach(action => {
-            const button = document.createElement('button');
-            button.className = "w-full text-left text-sm p-2 rounded-md bg-violet-800/50 hover:bg-violet-800/90 text-violet-200 transition-colors";
-            button.textContent = action.text;
-            button.dataset.next = action.next;
-            chatbotActions.appendChild(button);
-        });
-      };
-
-      chatbotActions.addEventListener('click', (e) => {
-          if (e.target.tagName === 'BUTTON') {
-              const nextKey = e.target.dataset.next;
-              appendMessage(e.target.textContent, 'user');
-              // NEW: Clear actions immediately, don't show static text
-              chatbotActions.innerHTML = '';
-              processChoice(nextKey);
+          } catch (error) {
+              console.error('Error fetching from Gemini:', error);
+              appendMessage("Sorry, I'm having trouble connecting right now. Please try again later.", 'bot');
+          } finally {
+              typingIndicator.classList.add('hidden');
+              chatbotInput.disabled = false;
+              chatbotInput.focus();
           }
+      }
+
+      chatbotForm.addEventListener('submit', (e) => {
+          e.preventDefault();
+          const userMessage = chatbotInput.value.trim();
+          if (!userMessage) return;
+
+          appendMessage(userMessage, 'user');
+          chatbotInput.value = '';
+          chatbotInput.disabled = true;
+
+          getGeminiResponse(userMessage);
       });
 
       chatbotLauncher.addEventListener('click', toggleChatbot);
       chatbotCloseBtn.addEventListener('click', toggleChatbot);
 
-      // Initial state - start with a dynamic welcome
-      const initialWelcome = chatLogic['main'];
-      appendMessage(initialWelcome.message, 'bot');
-      renderActions(initialWelcome.actions);
-      // MODIFICATION END: Chatbot JavaScript Logic
+      // Initial welcome message
+      appendMessage("Hi! I'm the SkillSphere AI Assistant, powered by Gemini. Ask me how to find a team or what SkillSphere is about! 🚀", 'bot');
     });
     </script>
 
