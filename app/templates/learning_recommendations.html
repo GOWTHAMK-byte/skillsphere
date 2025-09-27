@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+
+{% block head %}
+{{ super() }}
+<style>
+    /* Animation for items to fade in gracefully */
+    .fade-in-item {
+        opacity: 0;
+        transform: translateY(10px);
+        animation: fade-in-up 0.6s cubic-bezier(0.3, 0.4, 0.4, 1) forwards;
+        animation-delay: var(--stagger-delay);
+    }
+    @keyframes fade-in-up {
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    /* ADDED: Smooth transition for the progress bar's width */
+    #combined-progress-bar-inner {
+        transition: width 0.7s ease-out;
+    }
+</style>
+{% endblock %}
+
+
+{% block content %}
+<div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+    <div class="text-center mb-12">
+        <h1 class="text-5xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-teal-300 via-sky-400 to-indigo-400">
+            Learning Hub
+        </h1>
+        <p class="mt-4 text-lg text-violet-300/80 max-w-3xl mx-auto">
+            Your progress bar updates as you complete videos. Gain skill points and level up!
+        </p>
+    </div>
+
+    {% if skills_data %}
+        <div class="max-w-3xl mx-auto mb-16 fade-in-item" style="--stagger-delay: 100ms;">
+            <h2 class="text-2xl font-bold text-center text-sky-300">Overall Progress</h2>
+            <p class="text-center text-violet-400 mb-3">Your combined proficiency in skills relevant to your applied events.</p>
+            {% set total_percentage = (total_current_level / total_max_level) * 100 if total_max_level > 0 else 0 %}
+            <div class="w-full bg-slate-700/80 rounded-full h-4 shadow-inner">
+                <div id="combined-progress-bar-inner" class="bg-gradient-to-r from-sky-500 to-cyan-400 h-4 rounded-full"
+                     style="width: {{ total_percentage }}%">
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-12 gap-y-16">
+            {% for skill in skills_data %}
+            {% set outer_loop_index = loop.index0 %}
+            <section class="fade-in-item" style="--stagger-delay: {{ 300 + (outer_loop_index * 150) }}ms;">
+
+                <h2 class="text-3xl font-extrabold mb-8">
+                    <span class="capitalize text-transparent bg-clip-text bg-gradient-to-r from-sky-300 to-cyan-300 drop-shadow-sm">{{ skill.name }}</span>
+                </h2>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    {% for resource in skill.resources %}
+                    <div class="fade-in-item group bg-slate-800/40 border border-slate-700/70 rounded-xl p-6 transition-all duration-300 hover:border-sky-500/60 hover:bg-slate-800/80 hover:-translate-y-1 hover:shadow-xl hover:shadow-violet-900/40"
+                         data-skill-name="{{ skill.name }}" data-resource-id="{{ resource.id }}"
+                         style="--stagger-delay: {{ 300 + (outer_loop_index * 150) + (loop.index0 * 75) + 150 }}ms;">
+
+                        <div class="aspect-w-16 aspect-h-9 mb-5 rounded-lg overflow-hidden border border-slate-700">
+                            <iframe id="player-{{ skill.name|replace(' ', '-') }}-{{ resource.id }}"
+                                    src="https://www.youtube.com/embed/{{ resource.id }}?enablejsapi=1"
+                                    title="{{ resource.title }}"
+                                    frameborder="0"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                    allowfullscreen
+                                    class="w-full h-full">
+                            </iframe>
+                        </div>
+                        <h3 class="text-lg font-bold text-violet-100 group-hover:text-sky-300 transition-colors">{{ resource.title }}</h3>
+                        <p class="mt-2 text-violet-300/80 text-sm">{{ resource.description }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </section>
+            {% endfor %}
+        </div>
+    {% else %}
+        {% endif %}
+</div>
+
+<script src="https://www.youtube.com/iframe_api"></script>
+<script>
+    // Store initial data from backend
+    let skillsData = {{ skills_data | tojson }};
+    let totalCurrentLevel = {{ total_current_level }};
+    let totalMaxLevel = {{ total_max_level }};
+
+    const watchedVideos = new Set(); // Track completed videos to prevent duplicate updates in a single session
+
+    window.onYouTubeIframeAPIReady = function() {
+        document.querySelectorAll('iframe[id^="player-"]').forEach(iframe => {
+            new YT.Player(iframe.id, {
+                events: { 'onStateChange': onPlayerStateChange }
+            });
+        });
+    }
+
+    function onPlayerStateChange(event) {
+        const player = event.target;
+        const iframe = player.getIframe();
+        const videoId = new URL(player.getVideoUrl()).searchParams.get('v');
+
+        // Check if video is finished
+        if (event.data == YT.PlayerState.ENDED) {
+            // If this video has already been processed in this session, do nothing
+            if (watchedVideos.has(videoId)) {
+                return;
+            }
+            watchedVideos.add(videoId);
+
+            const card = iframe.closest('[data-skill-name]');
+            const skillName = card.dataset.skillName;
+
+            // 1. Persist the progress to the backend
+            fetch("{{ url_for('video_watched') }}", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ skill_name: skillName })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log(Progress for ${data.skill_name} saved! New level on profile: ${data.new_level});
+                    // 2. Update frontend progress bar with a proportional visual increment
+                    updateProgressBar(skillName);
+                }
+            });
+        }
+    }
+
+    function updateProgressBar(skillName) {
+        // Find the skill to determine how many videos it has
+        const skill = skillsData.find(s => s.name === skillName);
+        if (!skill || !skill.resources || skill.resources.length === 0) {
+            return;
+        }
+
+        // MODIFIED: Calculate a proportional increment.
+        // Watching all videos for a skill will visually contribute +1 to the total level.
+        const increment = 1 / skill.resources.length;
+
+        // Increment the client-side level for an instant visual update
+        totalCurrentLevel += increment;
+
+        const progressBar = document.getElementById('combined-progress-bar-inner');
+        if (progressBar && totalMaxLevel > 0) {
+            const newPercentage = (totalCurrentLevel / totalMaxLevel) * 100;
+            progressBar.style.width = ${Math.min(newPercentage, 100)}%; // Cap at 100%
+        }
+    }
+</script>
+{% endblock %}

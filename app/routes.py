@@ -24,11 +24,67 @@ import re
 from sqlalchemy import case
 from app.hackathon_scraper import HackathonScraper
 from app.models import HackathonPost
-from app.hackathon_scraper import HackathonScraper  # Make sure to import it
+from app.hackathon_scraper import HackathonScraper
 from flask import render_template, jsonify
-import random  # <-- ADD THIS IMPORT
+import random
 from sqlalchemy.orm import selectinload
-# --- ADD QUIZ DATA STRUCTURE ---
+
+# --- ADD THIS IMPORT FOR GEMINI ---
+import google.generativeai as genai
+
+# --- ADD THIS BLOCK FOR GEMINI INTEGRATION ---
+# Configure the Gemini API client
+# --- ADD THIS BLOCK FOR GEMINI INTEGRATION ---
+
+# Configure the Gemini API client
+try:
+    # Attempt to configure Gemini with the API key from environment variables
+    genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
+    # UPDATED MODEL NAME
+    model = genai.GenerativeModel('gemini-2.5-flash')
+    print("Gemini model configured successfully.")
+except Exception as e:
+    # If configuration fails (e.g., no API key), log the error and set model to None
+    print(f"Error configuring Gemini: {e}")
+    model = None
+# --- THIS IS THE ONLY 'ask_gemini' BLOCK YOU SHOULD HAVE ---
+
+@app.route('/ask_gemini', methods=['POST'])
+def ask_gemini():
+    """
+    This route handles chatbot messages. It receives a user's message,
+    adds context about the SkillSphere website, sends it to the Gemini API,
+    and returns the AI's response.
+    """
+    if not model:
+        return jsonify({'error': 'AI model is not configured on the server.'}), 500
+
+    data = request.get_json()
+    if not data or 'message' not in data:
+        return jsonify({'error': 'No message provided.'}), 400
+
+    user_message = data['message']
+
+    prompt = f"""
+    You are the SkillSphere Assistant, a helpful and friendly AI integrated into the SkillSphere website.
+    SkillSphere is a platform for finding teammates for hackathons and projects. Users can create posts to recruit members, apply to join teams, search for projects, and build their profiles with skills. The platform also has a leaderboard and skill quizzes.
+    Keep your answers concise and directly related to the user's question within the context of SkillSphere.
+
+    User's question: "{user_message}"
+    """
+
+    try:
+        response = model.generate_content(prompt)
+        return jsonify({'reply': response.text})
+    except Exception as e:
+        app.logger.error(f"Error calling Gemini API: {e}")
+        return jsonify({'error': 'Failed to get a response from the AI assistant.'}), 500
+
+
+
+# --- END OF GEMINI INTEGRATION BLOCK ---
+
+
 # A data structure to hold quiz questions for each category.
 # 'skill_reward' points to the skill that gets a level boost for a correct answer.
 QUIZ_DATA = {
@@ -166,6 +222,8 @@ def inject_notifications():
         unread_count = db.session.scalar(query)
         total_unread += unread_count or 0
     return dict(notifications_count=total_unread)
+
+# ... (the rest of your file is unchanged)
 
 
 def analyze_certificate_locally(file_stream, filename, user_name, skill_name):
@@ -442,6 +500,183 @@ def logout():
     logout_user()
     return redirect(url_for('index'))
 
+LEARNING_RESOURCES = {
+    'python': [
+        {'title': 'Python for Beginners - Full Course', 'type': 'video', 'source': 'youtube', 'id': 'e-5obm1G_FY', 'description': 'A comprehensive 12-hour tutorial covering all the basics of Python programming, perfect for absolute beginners.'},
+        {'title': 'Object-Oriented Programming (OOP) in Python', 'type': 'video', 'source': 'youtube', 'id': 'Ej_02QuJS_s', 'description': 'Learn about classes, objects, inheritance, and other core OOP concepts in Python.'},
+        {'title': 'Flask Course - Python Web Application Development', 'type': 'video', 'source': 'youtube', 'id': 'Z1RJmh_OqeA', 'description': 'A complete course on the Flask micro web framework for Python, covering routing, templates, and databases.'},
+        {'title': 'Python Django Full Course', 'type': 'video', 'source': 'youtube', 'id': 'UmljXZIypDc', 'description': 'Learn the powerful Django framework from scratch by building a complete web application.'}
+    ],
+    'react': [
+        {'title': 'React JS Crash Course', 'type': 'video', 'source': 'youtube', 'id': 'w7ejDZ8o_g8', 'description': 'Get up and running with React, the popular JavaScript library for building user interfaces. Covers components, state, props, and hooks.'},
+        {'title': 'Full Modern React Tutorial', 'type': 'video', 'source': 'youtube', 'id': 'SqcY0GlETPk', 'description': 'A complete tutorial series on modern React, including hooks, context, and reducers.'},
+        {'title': 'Build and Deploy a React Admin Dashboard', 'type': 'video', 'source': 'youtube', 'id': 'wYpCWwD1pVA', 'description': 'A project-based tutorial where you build a feature-rich admin panel with React.'}
+    ],
+    'javascript': [
+        {'title': 'JavaScript Full Course for Beginners', 'type': 'video', 'source': 'youtube', 'id': 'PkZNo7MFNFg', 'description': 'Learn JavaScript from scratch with this complete 3-hour course covering variables, data types, functions, and the DOM.'},
+        {'title': 'ES6 JavaScript Tutorial for Beginners', 'type': 'video', 'source': 'youtube', 'id': 'WZQc7RUAg18', 'description': 'A guide to the modern features of JavaScript (ES6), including let/const, arrow functions, classes, and promises.'}
+    ],
+    'typescript': [
+        {'title': 'TypeScript - The Basics', 'type': 'video', 'source': 'youtube', 'id': 'ahCwqrYpI0k', 'description': 'A concise introduction to TypeScript, covering types, interfaces, classes, and how it enhances JavaScript development.'}
+    ],
+    'html': [
+        {'title': 'HTML Full Course - Build a Website Tutorial', 'type': 'video', 'source': 'youtube', 'id': 'pQN-pnXPaVg', 'description': 'A comprehensive tutorial for beginners to learn all the main concepts of HTML5 to build websites.'}
+    ],
+    'css': [
+        {'title': 'CSS Tutorial - Zero to Hero (Complete Course)', 'type': 'video', 'source': 'youtube', 'id': '1Rs2ND1ryYc', 'description': 'An in-depth course that covers everything from the basics of CSS to advanced topics like Flexbox, Grid, and animations.'},
+        {'title': 'Tailwind CSS Full Course for Beginners', 'type': 'video', 'source': 'youtube', 'id': 'lCxcTsOHrjo', 'description': 'Learn the popular utility-first CSS framework Tailwind CSS from scratch.'}
+    ],
+    'java': [
+        {'title': 'Java Full Course for Beginners', 'type': 'video', 'source': 'youtube', 'id': 'eIrMbAQSU34', 'description': 'Learn the fundamentals of Java programming in this comprehensive 12-hour video, including syntax, OOP, and data structures.'},
+        {'title': 'Spring Boot Tutorial for Beginners', 'type': 'video', 'source': 'youtube', 'id': 'vtPkZShrvXQ', 'description': 'A complete course on Spring Boot, the most popular framework for building enterprise-level applications in Java.'}
+    ],
+    'csharp': [
+        {'title': 'C# Full Course for free', 'type': 'video', 'source': 'youtube', 'id': 'A_f4_L-w5_A', 'description': 'A comprehensive 11-hour course on C# and the .NET framework, perfect for building a strong foundation.'}
+    ],
+    'node.js': [
+        {'title': 'Node.js and Express.js - Full Course', 'type': 'video', 'source': 'youtube', 'id': 'Oe421JkE9SA', 'description': 'Build and deploy a REST API using Node.js and the Express framework from scratch.'}
+    ],
+    'mongodb': [
+        {'title': 'MongoDB Crash Course', 'type': 'video', 'source': 'youtube', 'id': '-56x56UppqQ', 'description': 'A beginner-friendly crash course on the NoSQL database MongoDB, covering CRUD operations, indexes, and the aggregation framework.'}
+    ],
+    'postgresql': [
+        {'title': 'PostgreSQL Tutorial for Beginners', 'type': 'video', 'source': 'youtube', 'id': 'D_OLPA0-Q_0', 'description': 'Learn to use PostgreSQL, a powerful and popular open-source relational database system.'}
+    ],
+    'docker': [
+        {'title': 'Docker Tutorial for Beginners', 'type': 'video', 'source': 'youtube', 'id': '3c-iBn73dDE', 'description': 'An 80-minute crash course on Docker, covering images, containers, volumes, and Docker Compose.'}
+    ],
+    'kubernetes': [
+        {'title': 'Kubernetes Course - Full Beginners Tutorial (Container Orchestration)', 'type': 'video', 'source': 'youtube', 'id': 'd6WC5n9G_sM', 'description': 'An introduction to Kubernetes for absolute beginners, explaining concepts like pods, services, and deployments.'}
+    ],
+    'terraform': [
+        {'title': 'Terraform Course - From BEGINNER to PRO!', 'type': 'video', 'source': 'youtube', 'id': '7xngnjfIlK4', 'description': 'Learn how to manage infrastructure as code using Terraform, a key tool in modern DevOps.'}
+    ],
+    'aws': [
+        {'title': 'AWS Certified Cloud Practitioner - Full Course', 'type': 'video', 'source': 'youtube', 'id': 'SOTamWNgDKc', 'description': 'A complete study guide for the AWS CCP exam, which also serves as a great introduction to AWS core services.'}
+    ],
+    'git': [
+        {'title': 'Git and GitHub for Beginners - Crash Course', 'type': 'video', 'source': 'youtube', 'id': 'RGOj5yH7evk', 'description': 'Learn the basics of version control with Git and how to use GitHub for collaboration in this one-hour tutorial.'}
+    ],
+    'swift': [
+        {'title': 'Swift Tutorial - Full Course for Beginners', 'type': 'video', 'source': 'youtube', 'id': 'comQ1-x2a1Q', 'description': 'A complete course on the Swift programming language for iOS app development, covering variables, control flow, functions, and more.'}
+    ],
+    'kotlin': [
+        {'title': 'Kotlin Crash Course for Beginners', 'type': 'video', 'source': 'youtube', 'id': 'EExSSotojVI', 'description': 'A fast-paced introduction to Kotlin, the official language for Android development.'}
+    ],
+    'flutter': [
+        {'title': 'Flutter Course for Beginners', 'type': 'video', 'source': 'youtube', 'id': 'x0uinJstbI8', 'description': 'A comprehensive tutorial on Flutter for building beautiful, natively compiled applications for mobile, web, and desktop from a single codebase.'}
+    ],
+    'machine learning': [
+        {'title': 'Machine Learning for Beginners: An Introduction', 'type': 'video', 'source': 'youtube', 'id': 'i_LwzRVP7bg', 'description': 'Understand the core concepts of Machine Learning, including supervised, unsupervised, and reinforcement learning.'},
+        {'title': 'PyTorch for Deep Learning', 'type': 'video', 'source': 'youtube', 'id': 'V_xro1bcAuA', 'description': 'A complete course on PyTorch, one of the leading deep learning frameworks, for building neural networks.'}
+    ],
+    'pandas': [
+        {'title': 'Complete Python Pandas Data Science Tutorial', 'type': 'video', 'source': 'youtube', 'id': 'vmEHCJofslg', 'description': 'A deep dive into the Pandas library for data manipulation and analysis in Python, covering DataFrames, Series, and data cleaning.'}
+    ],
+    'numpy': [
+        {'title': 'Python NumPy Tutorial for Beginners', 'type': 'video', 'source': 'youtube', 'id': 'QUT1VHiLmmI', 'description': 'Learn the fundamentals of NumPy, the core library for numerical and scientific computing in Python.'}
+    ],
+    'figma': [
+        {'title': 'Figma UI Design Tutorial: Get Started in 25 Minutes', 'type': 'video', 'source': 'youtube', 'id': 'jk1T0s_w_MA', 'description': 'A quick and practical guide to start designing user interfaces with Figma.'}
+    ],
+    'ux': [
+        {'title': 'UX Design Full Course for Beginners', 'type': 'video', 'source': 'youtube', 'id': 'cKZEgtQUxlA', 'description': 'Learn the fundamentals of User Experience (UX) design, including user research, wireframing, and usability testing.'}
+    ],
+    'ui': [
+        {'title': 'Learn UI Design - The Complete Course', 'type': 'video', 'source': 'youtube', 'id': '5_26-Fyl4W8', 'description': 'A full course on User Interface (UI) design principles, covering color theory, typography, layout, and more.'}
+    ],
+    'sql': [
+        {'title': 'SQL Tutorial - Full Database Course for Beginners', 'type': 'video', 'source': 'youtube', 'id': 'HXV3zeQKqGY', 'description': 'Learn the fundamentals of SQL and database management in this comprehensive 4-hour course.'}
+    ]
+}
+
+
+@app.route('/learning')
+@login_required
+def learning_recommendations():
+    """Recommends learning resources and calculates overall progress for skills related to a user's applications."""
+
+    MAX_SKILL_LEVEL = 10  # Define a max level for progress bar scaling
+
+    applications = db.session.scalars(
+        sa.select(Application)
+        .where(Application.applicant_id == current_user.id)
+        .options(selectinload(Application.post).selectinload(Post.required_skills))
+    ).all()
+
+    if not applications:
+        return render_template('learning_recommendations.html', skills_data=[], title="Learning Hub")
+
+    all_relevant_skills = set()
+    for app in applications:
+        if app.post:
+            for skill in app.post.required_skills:
+                all_relevant_skills.add(skill.name.lower())
+
+    user_skill_levels = {
+        assoc.skill.name.lower(): assoc.level
+        for assoc in current_user.profile.skill_associations
+    }
+
+    skills_data = []
+    total_current_level = 0
+    total_max_level = 0
+
+    for skill_name in sorted(list(all_relevant_skills)):
+        # MODIFIED: Check if learning resources exist for the skill before adding it
+        if skill_name in LEARNING_RESOURCES and LEARNING_RESOURCES[skill_name]:
+            current_level = user_skill_levels.get(skill_name, 0)
+            skills_data.append({
+                'name': skill_name,
+                'current_level': current_level,
+                'max_level': MAX_SKILL_LEVEL,
+                'resources': LEARNING_RESOURCES.get(skill_name, [])
+            })
+            # Add to totals only if the skill is being displayed
+            total_current_level += current_level
+            total_max_level += MAX_SKILL_LEVEL
+
+    return render_template('learning_recommendations.html',
+                           skills_data=skills_data,
+                           total_current_level=total_current_level,
+                           total_max_level=total_max_level,
+                           title="Learning Hub")
+
+
+@app.route('/api/learning/video_watched', methods=['POST'])
+@login_required
+def video_watched():
+    """Increments a user's skill level when a learning video is completed."""
+    data = request.get_json()
+    skill_name = data.get('skill_name')
+    if not skill_name:
+        return jsonify({'success': False, 'error': 'Skill name is required.'}), 400
+
+    MAX_SKILL_LEVEL = 10  # Ensure this matches the value in the learning_recommendations route
+
+    # Find the skill object
+    skill = db.session.scalar(sa.select(Skill).where(Skill.name.ilike(skill_name)))
+    if not skill:
+        # If the skill doesn't exist for some reason, we can't update it.
+        return jsonify({'success': False, 'error': 'Skill not found.'}), 404
+
+    # Find the association between the user's profile and the skill
+    assoc = db.session.scalar(sa.select(ProfileSkill).where(
+        ProfileSkill.profile_id == current_user.profile.id,
+        ProfileSkill.skill_id == skill.id
+    ))
+
+    if assoc:
+        # If the user already has the skill, increment its level up to the max
+        if assoc.level < MAX_SKILL_LEVEL:
+            assoc.level += 1
+    else:
+        # If the user does not have the skill, add it to their profile with level 1
+        assoc = ProfileSkill(profile_id=current_user.profile.id, skill_id=skill.id, level=1)
+        db.session.add(assoc)
+
+    db.session.commit()
+    return jsonify({'success': True, 'skill_name': skill.name, 'new_level': assoc.level})
 
 @app.route('/api/skills/search')
 @login_required

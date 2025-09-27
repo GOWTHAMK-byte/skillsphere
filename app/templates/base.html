@@ -121,9 +121,8 @@
 
                 <a href="{{ url_for('leaderboard') }}" class="text-neutral-300 hover:text-white font-medium nav-link focus-ring" aria-label="Leaderboard">Leaderboard</a>
 
-                <!-- START: New Hackathons Button -->
+                <a href="{{ url_for('learning_recommendations') }}" class="text-neutral-300 hover:text-white font-medium nav-link focus-ring" aria-label="Learning Hub">Learning Hub</a>
                 <a href="{{ url_for('hackathons') }}" class="text-neutral-300 hover:text-white font-medium nav-link focus-ring" aria-label="Hackathons">Hackathons</a>
-                <!-- END: New Hackathons Button -->
 
                 {% if current_user.is_authenticated %}
                 <a href="{{ url_for('messages') }}" class="text-neutral-300 hover:text-white font-medium transition relative p-2 rounded-full hover:bg-violet-900/50 focus-ring" title="Messages" aria-label="View Messages">
@@ -306,19 +305,19 @@
         },
         about: {
             message: "SkillSphere is a platform designed to help you find teammates for hackathons, projects, and competitions. You can create posts to recruit members, or apply to join existing teams!",
-            actions: [{ text: "⬅️ Back to main menu", next: "main" }]
+            actions: [{ text: "⬅ Back to main menu", next: "main" }]
         },
         findTeam: {
             message: "Easy! You can browse the 'All Posts' tab, check your personalized 'Recommended For You' feed, or use the search bar to find projects that match your interests.",
-            actions: [{ text: "⬅️ Back to main menu", next: "main" }]
+            actions: [{ text: "⬅ Back to main menu", next: "main" }]
         },
         recommendations: {
             message: "Our system analyzes your skills, past projects, and even your location to suggest posts where you'd be a great fit. The more you use the site, the better your recommendations get!",
-            actions: [{ text: "⬅️ Back to main menu", next: "main" }]
+            actions: [{ text: "⬅ Back to main menu", next: "main" }]
         },
         leaderboard: {
             message: "You can improve your rank by adding skills to your profile, getting them verified by completing projects, and acing the skill quizzes. Good luck! 🏆",
-            actions: [{ text: "⬅️ Back to main menu", next: "main" }]
+            actions: [{ text: "⬅ Back to main menu", next: "main" }]
         }
       };
 
@@ -330,10 +329,10 @@
 
       const appendMessage = (text, sender) => {
         const messageWrapper = document.createElement('div');
-        messageWrapper.className = `w-full flex ${sender === 'user' ? 'justify-end' : 'justify-start'}`;
+        messageWrapper.className = w-full flex ${sender === 'user' ? 'justify-end' : 'justify-start'};
 
         const messageBubble = document.createElement('div');
-        messageBubble.className = `chat-bubble max-w-[85%] rounded-2xl px-4 py-2 text-sm`;
+        messageBubble.className = chat-bubble max-w-[85%] rounded-2xl px-4 py-2 text-sm;
         messageBubble.textContent = text;
 
         const wrapperClass = sender === 'user' ? 'user-message' : 'bot-message';
